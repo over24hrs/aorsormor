@@ -329,31 +329,78 @@ let villageInfo = JSON.parse(localStorage.getItem('villageInfo') || 'null') || {
   address: 'บ้านใหม่เจริญไพร หมู่ 9 ตำบลฝายกวาง อำเภอเชียงคำ จังหวัดพะเยา'
 };
 
-// Member overrides — keyed by member id, survives API reload
-// Stores only the fields that admin has edited: { name, role, phone, photo }
-let memberOverrides = JSON.parse(localStorage.getItem('memberOverrides') || '{}');
+// ============================================================
+// MEMBER OVERRIDES (text only) + PHOTO STORE (per-member key)
+// Two separate stores so large photos never block text saving.
+// ============================================================
+
+// Text overrides — tiny JSON object {id: {name,role,phone}}
+let memberOverrides = (function() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('memberOverrides') || '{}');
+    // Migration: strip any old 'photo' field that was accidentally stored here
+    let changed = false;
+    Object.keys(raw).forEach(k => {
+      if (raw[k] && raw[k].photo) {
+        // Move to per-member key if not already there
+        const existing = localStorage.getItem('mPhoto_' + k);
+        if (!existing) {
+          try { localStorage.setItem('mPhoto_' + k, raw[k].photo); } catch(e) {}
+        }
+        delete raw[k].photo;
+        changed = true;
+      }
+    });
+    if (changed) {
+      try { localStorage.setItem('memberOverrides', JSON.stringify(raw)); } catch(e) {}
+    }
+    return raw;
+  } catch(e) { return {}; }
+})();
 
 function applyMemberOverrides() {
   members = members.map(m => {
-    const ov = memberOverrides[String(m.id)];
-    if (!ov) return m;
-    return { ...m, ...ov };
+    const key = String(m.id);
+    const ov  = memberOverrides[key] || {};
+    // Per-member photo key takes priority over API photo
+    const savedPhoto = localStorage.getItem('mPhoto_' + key);
+    const photo = savedPhoto || ov.photo || m.photo || '';
+    return { ...m, ...ov, photo };
   });
 }
 
-function saveMemberOverride(id, fields) {
+// Save text fields (name / role / phone) only — never photos
+function saveMemberTextOverride(id, fields) {
   const key = String(id);
-  memberOverrides[key] = { ...(memberOverrides[key] || {}), ...fields };
+  // Strip photo just in case
+  const { photo: _ignored, ...textOnly } = fields;
+  memberOverrides[key] = { ...(memberOverrides[key] || {}), ...textOnly };
   try {
     localStorage.setItem('memberOverrides', JSON.stringify(memberOverrides));
+    return true;
   } catch(e) {
-    // QuotaExceededError — storage full
-    throw new Error('QUOTA');
+    return false; // Quota — caller will show toast
   }
 }
 
-// Resize & compress image using canvas before storing
-// maxPx = max width or height in pixels, quality = JPEG quality 0-1
+// Save photo to its own dedicated localStorage key
+function saveMemberPhotoOverride(id, dataUrl) {
+  try {
+    localStorage.setItem('mPhoto_' + String(id), dataUrl);
+    return true;
+  } catch(e) {
+    // Even the individual key is too large — try removing old photos and retry
+    try {
+      localStorage.removeItem('mPhoto_' + String(id));
+      localStorage.setItem('mPhoto_' + String(id), dataUrl);
+      return true;
+    } catch(e2) {
+      return false;
+    }
+  }
+}
+
+// Resize & compress image to max 220×220 JPEG (~15-25 KB) before storing
 function resizeImage(file, maxPx = 220, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -779,42 +826,49 @@ function renderHome() {
 async function saveMember(id) {
   const m = members.find(x => x.id === id);
   if (!m) return;
-  const name = document.getElementById('ename_'+id).value.trim();
-  const role = document.getElementById('erole_'+id).value.trim();
-  const phone = document.getElementById('ephone_'+id).value.trim();
+  const name  = document.getElementById('ename_'+id)?.value.trim()  || m.name;
+  const role  = document.getElementById('erole_'+id)?.value.trim()  || m.role;
+  const phone = document.getElementById('ephone_'+id)?.value.trim() || m.phone;
 
-  // Update in-memory state
+  // Update in-memory state immediately
   m.name = name; m.role = role; m.phone = phone;
 
-  // Save as persistent override — survives API reload on every page refresh
-  saveMemberOverride(id, { name, role, phone });
-  showToast('✅ บันทึกข้อมูลแล้ว');
+  // Save text-only override (separate from photos — never quota-blocks)
+  const ok = saveMemberTextOverride(id, { name, role, phone });
+  if (ok) {
+    showToast('✅ บันทึกข้อมูลแล้ว');
+  } else {
+    showToast('⚠️ บันทึกในเครื่องไม่ได้ (storage เต็ม) แต่แสดงผลในหน้านี้แล้ว');
+  }
 
-  // Also try syncing to API (optional, non-blocking)
+  render();
+
+  // Non-blocking API sync
   try {
     await apiPost({ action: 'updateMember', data: { id, 'ชื่อ-สกุล': name, 'ตำแหน่ง': role, 'เบอร์โทร': phone } });
   } catch(e) {}
-  render();
 }
 
 async function uploadMemberPhoto(id) {
-  const file = document.getElementById('photoFile_'+id).files[0];
+  const fileEl = document.getElementById('photoFile_'+id);
+  const file = fileEl?.files[0];
   if (!file) return;
-  showToast('⏳ กำลังบันทึกรูปภาพ...');
+  showToast('⏳ กำลังประมวลผลรูปภาพ...');
   try {
-    // Resize & compress to ~220×220 JPEG before storing (keeps size ~15-25 KB)
+    // Resize & compress to 220×220 JPEG (~15-25 KB) before storing
     const photoUrl = await resizeImage(file, 220, 0.82);
     const m = members.find(x => x.id === id);
     if (m) m.photo = photoUrl;
-    try {
-      saveMemberOverride(id, { photo: photoUrl });
-    } catch(storageErr) {
-      showToast('❌ พื้นที่จัดเก็บเต็ม — กรุณาล้างรูปเก่าก่อน');
-      return;
+
+    // Store in per-member key — never touches memberOverrides
+    const ok = saveMemberPhotoOverride(id, photoUrl);
+    if (ok) {
+      showToast('✅ อัปเดตรูปภาพแล้ว — บันทึกถาวร');
+    } else {
+      showToast('⚠️ บันทึกรูปไม่ได้ (storage เต็ม) แต่แสดงผลในหน้านี้แล้ว');
     }
     render();
-    showToast('✅ อัปเดตรูปภาพแล้ว — บันทึกถาวร');
-    try { await apiPost({ action: 'updateMemberPhoto', data: { id, photoUrl } }); } catch(err) {}
+    try { await apiPost({ action: 'updateMemberPhoto', data: { id, photoUrl } }); } catch(e) {}
   } catch(err) {
     showToast('❌ โหลดรูปไม่สำเร็จ กรุณาลองใหม่');
   }
