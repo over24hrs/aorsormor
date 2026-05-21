@@ -571,6 +571,42 @@ async function initApp() {
 
     applyMemberOverrides(); // อ่านจาก photoCache (sync) — ไม่มีปัญหา quota
 
+    // ====== Auto-restore login จาก "จดจำรหัสผ่าน" ======
+    const _rem = JSON.parse(localStorage.getItem('asomRemember') || 'null');
+    if (_rem && _rem.id && _rem.pw) {
+      const _localPw = localStorage.getItem('asomPw_' + _rem.id);
+      if (_localPw && _localPw === _rem.pw) {
+        loggedInAsom = members.find(m => String(m.id) === String(_rem.id)) || null;
+        if (loggedInAsom) {
+          // โหลดจาก localStorage ก่อน (ใช้งานได้ทันที offline)
+          const _local = loadHealthLocal(_rem.id);
+          if (_local.length > 0) {
+            healthMembers = healthMembers.filter(h => String(h.asomId) !== String(_rem.id));
+            healthMembers.push(..._local);
+          }
+          // รีเฟรชจาก API แบบ non-blocking (ถ้ามี)
+          apiGet('getHealth', { asomId: _rem.id }).then(res => {
+            if (res && res.success && res.data && res.data.length > 0) {
+              const _loaded = res.data.map(h => ({
+                id: h['id'], asomId: h['รหัสอสม'],
+                firstName: h['ชื่อ'], lastName: h['นามสกุล'],
+                address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
+                edu: h['การศึกษา'], phone: h['เบอร์โทร'],
+                disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
+                weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
+                bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
+                photo: h['รูปภาพ(URL)'] || ''
+              }));
+              healthMembers = healthMembers.filter(h => String(h.asomId) !== String(_rem.id));
+              healthMembers.push(..._loaded);
+              saveHealthLocal(_rem.id);
+              if (currentPage === 'health') render();
+            }
+          }).catch(() => {});
+        }
+      }
+    }
+
     if (financeRes && financeRes.success) finances = financeRes.data || [];
     if (eventsRes && eventsRes.success) events = eventsRes.data || [];
     if (actOrderRes && actOrderRes.success) activityOrders = actOrderRes.data || [];
@@ -1262,6 +1298,17 @@ async function deleteActOrder(id) {
 }
 
 // ============================================================
+// HEALTH DATA PERSISTENCE — บันทึกลูกป๊อกลง localStorage ต่อ อสม.
+// ============================================================
+function saveHealthLocal(asomId) {
+  const mine = healthMembers.filter(h => String(h.asomId) === String(asomId));
+  try { localStorage.setItem('healthLocal_' + asomId, JSON.stringify(mine)); } catch(e) {}
+}
+function loadHealthLocal(asomId) {
+  try { return JSON.parse(localStorage.getItem('healthLocal_' + asomId) || '[]'); } catch(e) { return []; }
+}
+
+// ============================================================
 // HEALTH
 // ============================================================
 function renderHealth() {
@@ -1275,7 +1322,11 @@ function renderHealth() {
     if (bmiVal < 18.5) { bmiClass='bmi-under'; bmiLabel='ผอม'; }
     else if (bmiVal >= 25 && bmiVal < 30) { bmiClass='bmi-over'; bmiLabel='น้ำหนักเกิน'; }
     else if (bmiVal >= 30) { bmiClass='bmi-obese'; bmiLabel='อ้วน'; }
+    const photoHtml = h.photo
+      ? `<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);" onerror="this.outerHTML='<span style=font-size:26px>👤</span>'">`
+      : `<span style="font-size:26px;">👤</span>`;
     return `<tr>
+      <td style="text-align:center;">${photoHtml}</td>
       <td>${h.firstName} ${h.lastName}</td>
       <td>${h.address||'-'}</td>
       <td>${h.phone||'-'}</td>
@@ -1290,7 +1341,7 @@ function renderHealth() {
         <button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember('${h.id}')">ลบ</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="10" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีสมาชิก</td></tr>';
+  }).join('') || '<tr><td colspan="11" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีสมาชิก</td></tr>';
 
   return `
     <p class="section-title">👨‍👩‍👧 รายชื่อ อสม. ที่ดูแลลูกป๊อก</p>
@@ -1315,7 +1366,7 @@ function renderHealth() {
     <div class="health-table-wrap" style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;min-width:800px;">
         <thead style="background:var(--green-dark);color:white;">
-          <tr><th style="padding:10px;font-size:13px;text-align:left;">ชื่อ-สกุล</th><th>บ้านเลขที่</th><th>เบอร์</th><th>โรคประจำตัว</th><th>สูง</th><th>น้ำหนัก</th><th>BMI</th><th>ความดัน</th><th>น้ำตาล</th><th>จัดการ</th></tr>
+          <tr><th style="padding:10px;font-size:13px;text-align:center;">รูป</th><th style="text-align:left;">ชื่อ-สกุล</th><th>บ้านเลขที่</th><th>เบอร์</th><th>โรคประจำตัว</th><th>สูง</th><th>น้ำหนัก</th><th>BMI</th><th>ความดัน</th><th>น้ำตาล</th><th>จัดการ</th></tr>
         </thead>
         <tbody id="healthTableBody">${rows}</tbody>
       </table>
@@ -1464,10 +1515,17 @@ async function doLogin() {
     } else {
       localStorage.removeItem('asomRemember');
     }
-    showLoading();
+    // โหลดจาก localStorage ก่อน (offline-first)
+    const _lh = loadHealthLocal(id);
+    if (_lh.length > 0) {
+      healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
+      healthMembers.push(..._lh);
+    }
+    render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
+    // รีเฟรชจาก API แบบ non-blocking
     try {
       const healthRes = await apiGet('getHealth', { asomId: id });
-      if (healthRes.success) {
+      if (healthRes.success && healthRes.data.length > 0) {
         const loaded = healthRes.data.map(h => ({
           id: h['id'], asomId: h['รหัสอสม'],
           firstName: h['ชื่อ'], lastName: h['นามสกุล'],
@@ -1480,9 +1538,10 @@ async function doLogin() {
         }));
         healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
         healthMembers.push(...loaded);
+        saveHealthLocal(id);
+        if (currentPage === 'health') render();
       }
     } catch(e) {}
-    render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
     return;
   }
 
@@ -1496,29 +1555,43 @@ async function doLogin() {
       } else {
         localStorage.removeItem('asomRemember');
       }
-      showLoading();
-      const healthRes = await apiGet('getHealth', { asomId: id });
-      if (healthRes.success) {
-        const loaded = healthRes.data.map(h => ({
-          id: h['id'], asomId: h['รหัสอสม'],
-          firstName: h['ชื่อ'], lastName: h['นามสกุล'],
-          address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
-          edu: h['การศึกษา'], phone: h['เบอร์โทร'],
-          disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
-          weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
-          bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
-          photo: h['รูปภาพ(URL)'] || ''
-        }));
+      // โหลดจาก localStorage ก่อน แสดงผลทันที
+      const _lh2 = loadHealthLocal(id);
+      if (_lh2.length > 0) {
         healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
-        healthMembers.push(...loaded);
+        healthMembers.push(..._lh2);
       }
       render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
+      try {
+        const healthRes = await apiGet('getHealth', { asomId: id });
+        if (healthRes.success && healthRes.data.length > 0) {
+          const loaded = healthRes.data.map(h => ({
+            id: h['id'], asomId: h['รหัสอสม'],
+            firstName: h['ชื่อ'], lastName: h['นามสกุล'],
+            address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
+            edu: h['การศึกษา'], phone: h['เบอร์โทร'],
+            disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
+            weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
+            bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
+            photo: h['รูปภาพ(URL)'] || ''
+          }));
+          healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
+          healthMembers.push(...loaded);
+          saveHealthLocal(id);
+          if (currentPage === 'health') render();
+        }
+      } catch(e) {}
     } else { showToast('❌ รหัสผ่านไม่ถูกต้อง'); }
   } catch(err) {
     // Fallback: รหัสเริ่มต้น asom + หมายเลข
     const expectedPw = 'asom' + id;
     if (pw === expectedPw || pw === 'asom1234') {
       loggedInAsom = members.find(m => String(m.id) === String(id));
+      const _lhFb = loadHealthLocal(id);
+      if (_lhFb.length > 0) {
+        healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
+        healthMembers.push(..._lhFb);
+      }
       render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
     } else {
       showToast('❌ รหัสผ่านไม่ถูกต้อง');
@@ -1613,12 +1686,15 @@ async function saveHealthMember() {
       if (res.success) { const hm = healthMembers.find(x => x.id === newId); if (hm) hm.id = res.id; }
     } catch(e) {}
   }
+  // บันทึกลง localStorage ทุกครั้งที่มีการเปลี่ยนแปลง
+  saveHealthLocal(loggedInAsom?.id);
   closeModal('addHealthModal'); render();
 }
 
 async function deleteHealthMember(id) {
   if (!confirm('ยืนยันการลบสมาชิก?')) return;
   healthMembers = healthMembers.filter(h => h.id !== id);
+  saveHealthLocal(loggedInAsom?.id);
   render(); showToast('🗑️ ลบสมาชิกแล้ว');
   try { await apiPost({ action: 'deleteHealth', id }); } catch(e) {}
 }
@@ -1648,8 +1724,11 @@ function filterHealth() {
     if (bmiVal<18.5){bc='bmi-under';bl='ผอม';}
     else if (bmiVal>=25&&bmiVal<30){bc='bmi-over';bl='น้ำหนักเกิน';}
     else if (bmiVal>=30){bc='bmi-obese';bl='อ้วน';}
-    return `<tr><td>${h.firstName} ${h.lastName}</td><td>${h.address||'-'}</td><td>${h.phone||'-'}</td><td>${h.disease||'-'}</td><td>${h.height||'-'}</td><td>${h.weight||'-'}</td><td><span class="bmi-badge ${bc}">${h.bmi||'-'} ${bl}</span></td><td>${h.bp||'-'}</td><td>${h.bloodSugar||'-'}</td><td><button class="btn-edit" onclick="editHealthMember('${h.id}')">แก้ไข</button><button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember('${h.id}')">ลบ</button></td></tr>`;
-  }).join('') || '<tr><td colspan="10" class="text-center" style="color:var(--gray-mid);padding:20px;">ไม่พบข้อมูล</td></tr>';
+    const ph = h.photo
+      ? `<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);" onerror="this.outerHTML='<span style=font-size:26px>👤</span>'">`
+      : `<span style="font-size:26px;">👤</span>`;
+    return `<tr><td style="text-align:center;">${ph}</td><td>${h.firstName} ${h.lastName}</td><td>${h.address||'-'}</td><td>${h.phone||'-'}</td><td>${h.disease||'-'}</td><td>${h.height||'-'}</td><td>${h.weight||'-'}</td><td><span class="bmi-badge ${bc}">${h.bmi||'-'} ${bl}</span></td><td>${h.bp||'-'}</td><td>${h.bloodSugar||'-'}</td><td><button class="btn-edit" onclick="editHealthMember('${h.id}')">แก้ไข</button><button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember('${h.id}')">ลบ</button></td></tr>`;
+  }).join('') || '<tr><td colspan="11" class="text-center" style="color:var(--gray-mid);padding:20px;">ไม่พบข้อมูล</td></tr>';
 }
 
 // ============================================================
