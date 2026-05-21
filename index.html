@@ -1253,42 +1253,178 @@ function renderHealth() {
 }
 
 function renderHealthLogin() {
+  const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
+  const preId = remembered ? String(remembered.id) : '';
+  const hasPw = preId ? !!localStorage.getItem('asomPw_' + preId) : false;
+  const eyeStyle = `position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:0;line-height:1;color:var(--gray-mid);`;
+  const pwWrap = `position:relative;display:flex;align-items:center;`;
+  const pwInput = (id, ph, onenter='') => `
+    <div style="${pwWrap}">
+      <input type="password" id="${id}" placeholder="${ph}" style="padding-right:36px;width:100%;" ${onenter ? `onkeypress="if(event.key==='Enter')${onenter}"` : ''}>
+      <button type="button" style="${eyeStyle}" onclick="togglePwVis('${id}',this)" title="แสดง/ซ่อนรหัสผ่าน">👁</button>
+    </div>`;
+
   return `
     <p class="section-title">👨‍👩‍👧 รายชื่อ อสม. ที่ดูแลลูกป๊อก</p>
     <p class="section-sub">กรุณาเข้าสู่ระบบด้วยบัญชี อสม. ของคุณ</p>
     <div class="login-box">
       <div style="text-align:center;font-size:48px;margin-bottom:12px;">🏥</div>
-      <h2 class="text-center">เข้าสู่ระบบ อสม.</h2>
+      <h2 style="text-align:center;">เข้าสู่ระบบ อสม.</h2>
       <p style="font-size:13px;color:var(--gray-mid);text-align:center;margin-bottom:22px;">เพื่อจัดการข้อมูลสมาชิกในความดูแลของคุณ</p>
-      <div class="form-group"><label>เลือก อสม.</label>
-        <select id="loginSelect">
-          <option value="">เลือกชื่อของคุณ...</option>
-          ${members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
-        </select></div>
-      <div class="form-group mt-4"><label>รหัสผ่าน</label>
-        <input type="password" id="loginPw" placeholder="รหัสผ่าน" onkeypress="if(event.key==='Enter')doLogin()"></div>
-      <div class="form-group mt-4" style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="rememberPw" style="width:auto;">
-        <label for="rememberPw" style="font-size:13px;cursor:pointer;">จดจำรหัสผ่าน</label>
+
+      <div class="form-group">
+        <label>เลือก อสม.</label>
+        <select id="loginSelect" onchange="onAsomSelectChange()">
+          <option value="">-- เลือกชื่อของคุณ --</option>
+          ${members.map(m => `<option value="${m.id}" ${preId===String(m.id)?'selected':''}>${m.name}</option>`).join('')}
+        </select>
       </div>
-      <button class="btn-primary mt-4 w-full" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
-      <p style="font-size:11px;color:var(--gray-mid);text-align:center;margin-top:8px;">* รหัสผ่านเริ่มต้น = asom + หมายเลขสมาชิก เช่น asom1</p>
-    </div>`;
+
+      <!-- ตั้งรหัสผ่านครั้งแรก -->
+      <div id="setPwPanel" style="display:${preId && !hasPw ? 'block' : 'none'};margin-top:16px;">
+        <div style="background:#fff8e1;border-left:4px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#7a5500;">
+          🔐 กำหนดรหัสผ่านครั้งแรก (อย่างน้อย 6 ตัวอักษร)
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่านใหม่</label>
+          ${pwInput('newPw1','อย่างน้อย 6 ตัวอักษร')}
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>ยืนยันรหัสผ่าน</label>
+          ${pwInput('newPw2','ใส่รหัสผ่านซ้ำอีกครั้ง','doSetPassword()')}
+        </div>
+        <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="doSetPassword()">💾 บันทึกรหัสผ่าน</button>
+      </div>
+
+      <!-- เข้าสู่ระบบ (มีรหัสผ่านแล้ว) -->
+      <div id="loginPanel" style="display:${preId && hasPw ? 'block' : 'none'};margin-top:16px;">
+        <div class="form-group">
+          <label>รหัสผ่าน</label>
+          ${pwInput('loginPw','รหัสผ่าน','doLogin()')}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+          <input type="checkbox" id="rememberPw" style="width:auto;" ${hasPw && remembered && String(remembered.id)===preId ? 'checked' : ''}>
+          <label for="rememberPw" style="font-size:13px;cursor:pointer;margin:0;">จดจำรหัสผ่าน</label>
+        </div>
+        <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
+        <p style="text-align:center;margin-top:10px;">
+          <button onclick="resetAsomPassword()" style="background:none;border:none;color:var(--gray-mid);font-size:12px;cursor:pointer;text-decoration:underline;">ตั้งรหัสผ่านใหม่</button>
+        </p>
+      </div>
+    </div>
+    <img src="data:image/gif;base64,R0lGOD" onerror="this.remove();if(document.getElementById('loginSelect')?.value)onAsomSelectChange();" style="display:none">`;
+}
+
+function onAsomSelectChange() {
+  const id = document.getElementById('loginSelect')?.value || '';
+  const setPwPanel = document.getElementById('setPwPanel');
+  const loginPanel = document.getElementById('loginPanel');
+  if (!setPwPanel || !loginPanel) return;
+  if (!id) {
+    setPwPanel.style.display = 'none';
+    loginPanel.style.display = 'none';
+    return;
+  }
+  const hasPw = !!localStorage.getItem('asomPw_' + id);
+  setPwPanel.style.display = hasPw ? 'none' : 'block';
+  loginPanel.style.display  = hasPw ? 'block' : 'none';
+  // Auto-fill remembered password
+  if (hasPw) {
+    const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
+    if (remembered && String(remembered.id) === String(id) && remembered.pw) {
+      const pwEl = document.getElementById('loginPw');
+      if (pwEl) pwEl.value = remembered.pw;
+      const remEl = document.getElementById('rememberPw');
+      if (remEl) remEl.checked = true;
+    }
+  }
+}
+
+function togglePwVis(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  if (btn) btn.textContent = show ? '🙈' : '👁';
+}
+
+function doSetPassword() {
+  const id = document.getElementById('loginSelect')?.value || '';
+  const pw1 = document.getElementById('newPw1')?.value || '';
+  const pw2 = document.getElementById('newPw2')?.value || '';
+  if (!id) { showToast('❌ กรุณาเลือก อสม. ก่อน'); return; }
+  if (pw1.length < 6) { showToast('❌ รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
+  if (pw1 !== pw2) { showToast('❌ รหัสผ่านไม่ตรงกัน กรุณาลองใหม่'); return; }
+  localStorage.setItem('asomPw_' + id, pw1);
+  showToast('✅ ตั้งรหัสผ่านแล้ว กรุณาเข้าสู่ระบบ');
+  // Switch to login panel without full re-render
+  const setPwPanel = document.getElementById('setPwPanel');
+  const loginPanel = document.getElementById('loginPanel');
+  if (setPwPanel) setPwPanel.style.display = 'none';
+  if (loginPanel) loginPanel.style.display = 'block';
+  const pwEl = document.getElementById('loginPw');
+  if (pwEl) { pwEl.value = ''; pwEl.focus(); }
+}
+
+function resetAsomPassword() {
+  const id = document.getElementById('loginSelect')?.value || '';
+  if (!id) return;
+  const m = members.find(x => String(x.id) === String(id));
+  if (!confirm(`ตั้งรหัสผ่านใหม่สำหรับ "${m?.name || id}" ?\n(รหัสเก่าจะถูกลบ)`)) return;
+  localStorage.removeItem('asomPw_' + id);
+  localStorage.removeItem('asomRemember');
+  onAsomSelectChange();
+  showToast('🔄 ลบรหัสผ่านเก่าแล้ว กรุณาตั้งรหัสผ่านใหม่');
 }
 
 async function doLogin() {
-  const selEl = document.getElementById('loginSelect');
-  const id = selEl ? selEl.value : '';
-  const pw = document.getElementById('loginPw').value;
-  if (!id || !pw) { alert('กรุณาเลือก อสม. และใส่รหัสผ่าน'); return; }
+  const id = document.getElementById('loginSelect')?.value || '';
+  const pw = document.getElementById('loginPw')?.value || '';
+  if (!id) { showToast('❌ กรุณาเลือก อสม. ก่อน'); return; }
+  if (!pw)  { showToast('❌ กรุณาใส่รหัสผ่าน'); return; }
 
-  // Try API login
+  const localPw = localStorage.getItem('asomPw_' + id);
+
+  // ถ้ามีรหัสในเครื่อง — ตรวจสอบจากเครื่องก่อนเลย
+  if (localPw) {
+    if (pw !== localPw) { showToast('❌ รหัสผ่านไม่ถูกต้อง'); return; }
+    loggedInAsom = members.find(m => String(m.id) === String(id));
+    if (document.getElementById('rememberPw')?.checked) {
+      localStorage.setItem('asomRemember', JSON.stringify({ id, pw }));
+    } else {
+      localStorage.removeItem('asomRemember');
+    }
+    showLoading();
+    try {
+      const healthRes = await apiGet('getHealth', { asomId: id });
+      if (healthRes.success) {
+        const loaded = healthRes.data.map(h => ({
+          id: h['id'], asomId: h['รหัสอสม'],
+          firstName: h['ชื่อ'], lastName: h['นามสกุล'],
+          address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
+          edu: h['การศึกษา'], phone: h['เบอร์โทร'],
+          disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
+          weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
+          bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
+          photo: h['รูปภาพ(URL)'] || ''
+        }));
+        healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
+        healthMembers.push(...loaded);
+      }
+    } catch(e) {}
+    render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
+    return;
+  }
+
+  // ไม่มีรหัสในเครื่อง — ลอง API
   try {
     const res = await apiPost({ action: 'login', data: { asomId: id, password: pw } });
     if (res.success) {
-      loggedInAsom = members.find(m => m.id === Number(id));
+      loggedInAsom = members.find(m => String(m.id) === String(id));
       if (document.getElementById('rememberPw')?.checked) {
         localStorage.setItem('asomRemember', JSON.stringify({ id, pw }));
+      } else {
+        localStorage.removeItem('asomRemember');
       }
       showLoading();
       const healthRes = await apiGet('getHealth', { asomId: id });
@@ -1307,15 +1443,15 @@ async function doLogin() {
         healthMembers.push(...loaded);
       }
       render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
-    } else { alert('รหัสผ่านไม่ถูกต้อง'); }
+    } else { showToast('❌ รหัสผ่านไม่ถูกต้อง'); }
   } catch(err) {
-    // Fallback: allow local login with default password pattern
+    // Fallback: รหัสเริ่มต้น asom + หมายเลข
     const expectedPw = 'asom' + id;
     if (pw === expectedPw || pw === 'asom1234') {
-      loggedInAsom = members.find(m => m.id === Number(id));
-      render(); showToast('✅ เข้าสู่ระบบสำเร็จ (local)');
+      loggedInAsom = members.find(m => String(m.id) === String(id));
+      render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
     } else {
-      alert('รหัสผ่านไม่ถูกต้อง');
+      showToast('❌ รหัสผ่านไม่ถูกต้อง');
     }
   }
 }
