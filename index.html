@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>อสม. บ้านใหม่เจริญไพร หมู่ 9</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+  ⚙️  ตั้งค่า Supabase ตรงนี้ก่อนใช้งาน
+  1. ไปที่ supabase.com → Project Settings → API
+  2. คัดลอก "Project URL" และ "anon public" key
+  3. วางลงในตัวแปร SUPABASE_URL และ SUPABASE_KEY ด้านล่าง
+============================================================ -->
+<script>
+  const SUPABASE_URL = 'https://xxxxxxxxxxxxxxxxxxxx.supabase.co'; // ← เปลี่ยนตรงนี้
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxx'; // ← เปลี่ยนตรงนี้
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 :root {
   --green-dark: #1a5c38;
@@ -31,8 +44,7 @@ body { font-family:'Sarabun',sans-serif; background:var(--gray-bg); color:var(--
 @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-100%)} }
 
 header { background:linear-gradient(135deg,var(--green-dark) 0%,var(--green-mid) 60%,#3aa068 100%); color:white; padding:18px 24px; display:flex; align-items:center; gap:16px; }
-.logo-circle { width:60px; height:60px; border-radius:50%; background:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:3px solid var(--gold); }
-.logo-circle span { font-size:22px; }
+.logo-circle { width:72px; height:72px; border-radius:50%; background:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:3px solid var(--gold); overflow:hidden; }
 header h1 { font-family:'Kanit',sans-serif; font-size:20px; font-weight:600; line-height:1.3; }
 header p { font-size:13px; opacity:.85; margin-top:3px; }
 
@@ -46,12 +58,6 @@ main { max-width:1100px; margin:0 auto; padding:24px 16px; }
 
 .section-title { font-family:'Kanit',sans-serif; font-size:22px; font-weight:600; color:var(--green-dark); margin-bottom:4px; }
 .section-sub { color:var(--gray-mid); font-size:13px; margin-bottom:20px; }
-
-/* ===== HERO NATURE SVG BANNERS ===== */
-.hero-images { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:24px; border-radius:var(--radius); overflow:hidden; }
-.hero-placeholder { height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; font-size:13px; font-weight:600; overflow:hidden; position:relative; }
-.hero-placeholder svg { position:absolute; inset:0; width:100%; height:100%; }
-.hero-placeholder .label { position:relative; z-index:1; color:white; text-shadow:0 1px 4px rgba(0,0,0,.5); font-size:13px; font-weight:700; background:rgba(0,0,0,0.22); padding:4px 12px; border-radius:20px; }
 
 .member-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
 .member-card { background:white; border-radius:var(--radius); padding:16px; text-align:center; box-shadow:var(--shadow); position:relative; border:1.5px solid transparent; transition:.2s; }
@@ -121,9 +127,6 @@ main { max-width:1100px; margin:0 auto; padding:24px 16px; }
 
 .login-box { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:32px 28px; max-width:400px; margin:0 auto; }
 .login-box h2 { font-family:'Kanit',sans-serif; font-size:20px; color:var(--green-dark); margin-bottom:6px; }
-.tab-btns { display:flex; gap:8px; margin-bottom:20px; }
-.tab-btn { flex:1; padding:8px; border:1.5px solid var(--green-light); background:none; border-radius:var(--radius-sm); cursor:pointer; font-family:'Sarabun',sans-serif; font-size:14px; font-weight:600; color:var(--text-sub); transition:.2s; }
-.tab-btn.active { background:var(--green-dark); border-color:var(--green-dark); color:white; }
 .health-table-wrap { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-top:16px; }
 .filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .filter-bar input, .filter-bar select { padding:7px 10px; border:1.5px solid #dde8e1; border-radius:var(--radius-sm); font-family:'Sarabun',sans-serif; font-size:13px; }
@@ -154,6 +157,12 @@ main { max-width:1100px; margin:0 auto; padding:24px 16px; }
 .modal h2 { font-family:'Kanit',sans-serif; font-size:18px; color:var(--green-dark); margin-bottom:16px; }
 .modal-close { float:right; background:none; border:none; font-size:22px; cursor:pointer; color:var(--gray-mid); margin-top:-4px; }
 
+/* DB status indicator */
+.db-status { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; font-weight:600; }
+.db-status.connected { background:#e8f5e9; color:#2e7d32; }
+.db-status.error { background:#ffebee; color:#c62828; }
+.db-status.loading { background:#fff8e1; color:#7a5500; }
+
 .flex { display:flex; }
 .gap-10 { gap:10px; }
 .mt-4 { margin-top:16px; }
@@ -161,10 +170,9 @@ main { max-width:1100px; margin:0 auto; padding:24px 16px; }
 .w-full { width:100%; }
 .hidden { display:none; }
 
-.toast { position:fixed; bottom:24px; right:24px; background:var(--green-dark); color:white; padding:12px 20px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; z-index:2000; opacity:0; transition:opacity .3s; pointer-events:none; }
+.toast { position:fixed; bottom:24px; right:24px; background:var(--green-dark); color:white; padding:12px 20px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; z-index:2000; opacity:0; transition:opacity .3s; pointer-events:none; max-width:320px; }
 .toast.show { opacity:1; }
 
-.loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:3000; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
 .spinner { width:40px; height:40px; border:4px solid var(--green-pale); border-top-color:var(--green-mid); border-radius:50%; animation:spin .7s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
 
@@ -183,20 +191,17 @@ input[type="file"] { display:none; }
 
 <div class="marquee-bar">
   <span class="marquee-inner" id="marqueeText">
-    🌿 ยินดีต้อนรับสู่เว็บไซต์ อสม. บ้านใหม่เจริญไพร หมู่ 9 &nbsp;|&nbsp;
-    📢 ประชุมประจำเดือน วันที่ 5 ของทุกเดือน เวลา 13:00 น. &nbsp;|&nbsp;
-    💊 แจกยาสามัญประจำบ้าน ติดต่อ อสม.ในพื้นที่ &nbsp;|&nbsp;
-    🏥 ฉีดวัคซีนไข้หวัดใหญ่ประจำปี - ติดตามประกาศเพิ่มเติม
+    🌿 ยินดีต้อนรับสู่เว็บไซต์ อสม. บ้านใหม่เจริญไพร หมู่ 9 &nbsp;|&nbsp; กำลังโหลด...
   </span>
 </div>
 
 <header>
-  <div style="width:72px;height:72px;flex-shrink:0;border-radius:50%;overflow:hidden;border:3px solid var(--gold);background:white;">
-    <img src="images/logo.png" alt="โลโก้บ้านใหม่เจริญไพร" style="width:100%;height:100%;object-fit:cover;">
+  <div class="logo-circle">
+    <img src="images/logo.png" alt="โลโก้" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<span style=font-size:28px>🌿</span>'">
   </div>
   <div>
-    <h1>กลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)</h1>
-    <p>บ้านใหม่เจริญไพร หมู่ 9 ตำบลฝายกวาง อำเภอเชียงคำ จังหวัดพะเยา</p>
+    <h1 id="headerTitle">กลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)</h1>
+    <p id="headerAddress">บ้านใหม่เจริญไพร หมู่ 9 ตำบลฝายกวาง อำเภอเชียงคำ จังหวัดพะเยา</p>
   </div>
 </header>
 
@@ -212,23 +217,20 @@ input[type="file"] { display:none; }
   </div>
 </nav>
 
-<main id="mainContent"><div style="text-align:center;padding:60px 0;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:12px;color:var(--gray-mid);">กำลังโหลดข้อมูล...</p></div></main>
+<main id="mainContent">
+  <div style="text-align:center;padding:60px 0;">
+    <div class="spinner" style="margin:0 auto;"></div>
+    <p style="margin-top:12px;color:var(--gray-mid);">กำลังเชื่อมต่อฐานข้อมูล...</p>
+  </div>
+</main>
 
 <div class="toast" id="toast"></div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="editMemberModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('editMemberModal')">×</button>
-    <h2>✏️ แก้ไขข้อมูล อสม.</h2>
-    <div id="editMemberForm"></div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="addEventModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('addEventModal')">×</button>
-    <h2>📅 เพิ่มกิจกรรม</h2>
+    <h2 id="eventModalTitle">📅 เพิ่มกิจกรรม</h2>
     <div class="form-group"><label>ชื่อกิจกรรม</label><input id="evtName" placeholder="ชื่อกิจกรรม"></div>
     <div class="form-group mt-4"><label>วันที่</label><input type="date" id="evtDate"></div>
     <div class="form-group mt-4"><label>เวลา</label><input type="time" id="evtTime"></div>
@@ -273,9 +275,7 @@ input[type="file"] { display:none; }
         <label class="btn-primary photo-upload-label" style="font-size:13px;padding:7px 16px;">📷 เลือกรูป<input type="file" accept="image/*" onchange="previewHealthPhoto(event)"></label>
       </div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn-primary w-full" onclick="saveHealthMember()">💾 บันทึก</button>
-    </div>
+    <button class="btn-primary w-full mt-4" onclick="saveHealthMember()">💾 บันทึก</button>
   </div>
 </div>
 
@@ -290,7 +290,6 @@ input[type="file"] { display:none; }
   </div>
 </div>
 
-<!-- Modal: Edit Village Info -->
 <div class="modal-overlay" id="editVillageModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('editVillageModal')">×</button>
@@ -301,11 +300,32 @@ input[type="file"] { display:none; }
   </div>
 </div>
 
+<div class="modal-overlay" id="editMemberModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('editMemberModal')">×</button>
+    <h2>✏️ แก้ไขข้อมูล อสม.</h2>
+    <div class="form-group"><label>ชื่อ-นามสกุล</label><input id="emName" placeholder="ชื่อ-นามสกุล"></div>
+    <div class="form-group mt-4"><label>ตำแหน่ง</label><input id="emRole" placeholder="ตำแหน่ง"></div>
+    <div class="form-group mt-4"><label>เบอร์โทร</label><input id="emPhone" placeholder="เบอร์โทร"></div>
+    <input type="hidden" id="emId">
+    <button class="btn-primary mt-4 w-full" onclick="saveMemberFromModal()">💾 บันทึก</button>
+  </div>
+</div>
+
 <script>
 // ============================================================
-// CONFIG
+// SUPABASE CLIENT
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzjBs761mdLLlw75iipwI0S-dVbtD1TfF3E3FO5Z-KQ9gm1Y5SiK0Im3uNz7qsFwJfL/exec';
+const { createClient } = supabase;
+let db;
+let dbReady = false;
+
+try {
+  db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  dbReady = true;
+} catch(e) {
+  console.error('Supabase init failed:', e);
+}
 
 // ============================================================
 // STATE
@@ -322,47 +342,14 @@ let currentPage = 'home';
 let editingFinId = null;
 let loggedInAsom = null;
 let editingEventId = null;
+let pendingMemberPhotoId = null; // for photo upload
 
-// Village info (editable in admin mode, persisted in localStorage)
 let villageInfo = JSON.parse(localStorage.getItem('villageInfo') || 'null') || {
   title: 'กลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)',
   address: 'บ้านใหม่เจริญไพร หมู่ 9 ตำบลฝายกวาง อำเภอเชียงคำ จังหวัดพะเยา'
 };
 
-// ============================================================
-// MEMBER OVERRIDES (text only) + PHOTO STORE (per-member key)
-// Two separate stores so large photos never block text saving.
-// ============================================================
-
-// Text overrides — tiny JSON object {id: {name,role,phone}}
-let memberOverrides = (function() {
-  try {
-    const raw = JSON.parse(localStorage.getItem('memberOverrides') || '{}');
-    // Migration: strip any old 'photo' field that was accidentally stored here
-    let changed = false;
-    Object.keys(raw).forEach(k => {
-      if (raw[k] && raw[k].photo) {
-        // Move to per-member key if not already there
-        const existing = localStorage.getItem('mPhoto_' + k);
-        if (!existing) {
-          try { localStorage.setItem('mPhoto_' + k, raw[k].photo); } catch(e) {}
-        }
-        delete raw[k].photo;
-        changed = true;
-      }
-    });
-    if (changed) {
-      try { localStorage.setItem('memberOverrides', JSON.stringify(raw)); } catch(e) {}
-    }
-    return raw;
-  } catch(e) { return {}; }
-})();
-
-// ============================================================
-// PHOTO STORAGE — IndexedDB (50-250MB) แทน localStorage (5MB)
-// photoCache = in-memory mirror โหลดครั้งเดียวตอน initApp()
-// ทุก render อ่านจาก cache (sync) — ไม่มีปัญหา quota อีกต่อไป
-// ============================================================
+// Photo cache (IndexedDB)
 const photoDB = {
   _db: null,
   async open() {
@@ -395,92 +382,22 @@ const photoDB = {
       tx.oncomplete = () => resolve(true);
       tx.onerror = () => reject(tx.error);
     });
-  },
-  async remove(key) {
-    const db = await this.open();
-    return new Promise(resolve => {
-      const tx = db.transaction('photos', 'readwrite');
-      tx.objectStore('photos').delete(String(key));
-      tx.oncomplete = () => resolve(); tx.onerror = () => resolve();
-    });
   }
 };
 
-let photoCache = {}; // โหลดจาก IndexedDB ก่อน render ครั้งแรก
+let photoCache = {};
 
 async function initPhotoCache() {
-  try {
-    photoCache = await photoDB.getAll();
-    // Migration: ย้าย mPhoto_* จาก localStorage → IndexedDB แล้วลบออก
-    const oldKeys = Object.keys(localStorage).filter(k => k.startsWith('mPhoto_'));
-    for (const k of oldKeys) {
-      const memberId = k.slice(7);
-      if (!photoCache[memberId]) {
-        const val = localStorage.getItem(k);
-        if (val) { await photoDB.set(memberId, val); photoCache[memberId] = val; }
-      }
-      localStorage.removeItem(k); // คืนพื้นที่ localStorage
-    }
-  } catch(e) {
-    // IndexedDB ไม่พร้อม — ใช้ localStorage เป็น fallback
-    photoCache = {};
-    Object.keys(localStorage).filter(k => k.startsWith('mPhoto_')).forEach(k => {
-      photoCache[k.slice(7)] = localStorage.getItem(k);
-    });
-  }
+  try { photoCache = await photoDB.getAll(); } catch(e) { photoCache = {}; }
 }
 
-function applyMemberOverrides() {
-  members = members.map(m => {
-    const key = String(m.id);
-    const ov  = memberOverrides[key] || {};
-    // photoCache โหลดมาแล้วตอน initApp() — อ่าน sync ได้เลย
-    const photo = photoCache[key] || m.photo || '';
-    return { ...m, ...ov, photo };
-  });
-}
-
-// Save text fields (name / role / phone) only — never photos
-function saveMemberTextOverride(id, fields) {
-  const key = String(id);
-  const { photo: _ignored, ...textOnly } = fields;
-  memberOverrides[key] = { ...(memberOverrides[key] || {}), ...textOnly };
-  try {
-    localStorage.setItem('memberOverrides', JSON.stringify(memberOverrides));
-    return true;
-  } catch(e) {
-    return false;
-  }
-}
-
-// Save photo → IndexedDB + update in-memory cache ทันที
-async function saveMemberPhotoOverride(id, dataUrl) {
-  const key = String(id);
-  try {
-    await photoDB.set(key, dataUrl);
-    photoCache[key] = dataUrl;
-    return true;
-  } catch(e) {
-    // IndexedDB ล้มเหลว — fallback localStorage
-    try {
-      localStorage.setItem('mPhoto_' + key, dataUrl);
-      photoCache[key] = dataUrl;
-      return true;
-    } catch(e2) {
-      return false;
-    }
-  }
-}
-
-// Resize & compress image to max 220×220 JPEG (~15-25 KB) before storing
 function resizeImage(file, maxPx = 220, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const objUrl = URL.createObjectURL(file);
     img.onload = () => {
       const scale = Math.min(maxPx / img.width, maxPx / img.height, 1);
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
@@ -493,172 +410,204 @@ function resizeImage(file, maxPx = 220, quality = 0.82) {
 }
 
 // ============================================================
-// API HELPERS — JSONP
+// SUPABASE HELPERS
 // ============================================================
-function jsonp(url) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'jsonpCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error('JSONP timeout'));
-    }, 15000);
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = function(data) { cleanup(); resolve(data); };
-    url += (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
-    script.src = url;
-    script.onerror = () => { cleanup(); reject(new Error('JSONP script error')); };
-    document.head.appendChild(script);
-  });
+
+// Check connection (try to read settings row)
+async function checkDB() {
+  if (!dbReady) return false;
+  const { error } = await db.from('settings').select('key').limit(1);
+  return !error;
 }
 
-async function apiGet(action, params = {}) {
-  const url = new URL('https://script.google.com/macros/s/AKfycbwKTStATmb5stdlNIlGSvpOlHYOXXBm7n2GMOzeb_sKgqkCPcoAhLTNEdTobbmP59eY/exec');
-  url.searchParams.set('action', action);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  return jsonp(url.toString());
+// Generic error logger
+function dbErr(action, error) {
+  console.error(`[DB] ${action}:`, error?.message || error);
+  showToast(`⚠️ ${action} ล้มเหลว: ${error?.message || 'ไม่ทราบสาเหตุ'}`);
 }
 
-async function apiPost(body) {
-  const url = new URL(API_URL);
-  url.searchParams.set('action', body.action);
-  url.searchParams.set('payload', JSON.stringify(body.data || body));
-  if (body.id !== undefined) url.searchParams.set('id', body.id);
-  if (body.key !== undefined) url.searchParams.set('key', body.key);
-  if (body.value !== undefined) url.searchParams.set('value', body.value);
-  return jsonp(url.toString());
+// ---- MEMBERS ----
+async function dbGetMembers() {
+  const { data, error } = await db.from('members').select('*').order('id');
+  if (error) { dbErr('โหลดสมาชิก', error); return []; }
+  return data.map(m => ({
+    id: m.id, name: m.name || '', role: m.role || '',
+    phone: m.phone || '', photo: m.photo_url || '', village: m.village || '9'
+  }));
 }
 
-function showLoading() {
-  document.getElementById('mainContent').innerHTML = `<div style="text-align:center;padding:60px 0;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:12px;color:var(--gray-mid);">กำลังโหลดข้อมูล...</p></div>`;
+async function dbUpdateMember(id, { name, role, phone }) {
+  const { error } = await db.from('members').update({ name, role, phone }).eq('id', id);
+  if (error) { dbErr('แก้ไขสมาชิก', error); return false; }
+  return true;
 }
 
-// ============================================================
-// INIT
-// ============================================================
-async function initApp() {
-  applyVillageInfoToHeader();
-
-  // โหลดรูปทั้งหมดจาก IndexedDB เข้า photoCache ก่อน render
-  await initPhotoCache();
-
-  try {
-    const [membersRes, financeRes, eventsRes, actOrderRes, settingsRes] = await Promise.all([
-      apiGet('getMembers'),
-      apiGet('getFinance'),
-      apiGet('getEvents'),
-      apiGet('getActOrders'),
-      apiGet('getSettings')
-    ]);
-
-    if (membersRes.success && membersRes.data.length > 0) {
-      members = membersRes.data.map(m => ({
-        id: Number(m['id']),
-        name: m['ชื่อ-สกุล'] || '',
-        role: m['ตำแหน่ง'] || '',
-        phone: m['เบอร์โทร'] || '',
-        photo: m['รูปภาพ(URL)'] || '',
-        village: m['หมู่บ้าน'] || ''
-      }));
-    } else {
-      members = loadDefaultMembers();
-      showToast('⚠️ ใช้ข้อมูลสำรอง — กรุณาตรวจสอบ API');
-    }
-
-    applyMemberOverrides(); // อ่านจาก photoCache (sync) — ไม่มีปัญหา quota
-
-    // ====== Auto-restore login จาก "จดจำรหัสผ่าน" ======
-    const _rem = JSON.parse(localStorage.getItem('asomRemember') || 'null');
-    if (_rem && _rem.id && _rem.pw) {
-      const _localPw = localStorage.getItem('asomPw_' + _rem.id);
-      if (_localPw && _localPw === _rem.pw) {
-        loggedInAsom = members.find(m => String(m.id) === String(_rem.id)) || null;
-        if (loggedInAsom) {
-          // โหลดจาก localStorage ก่อน (ใช้งานได้ทันที offline)
-          const _local = loadHealthLocal(_rem.id);
-          if (_local.length > 0) {
-            healthMembers = healthMembers.filter(h => String(h.asomId) !== String(_rem.id));
-            healthMembers.push(..._local);
-          }
-          // รีเฟรชจาก API แบบ non-blocking (ถ้ามี)
-          apiGet('getHealth', { asomId: _rem.id }).then(res => {
-            if (res && res.success && res.data && res.data.length > 0) {
-              const _loaded = res.data.map(h => ({
-                id: h['id'], asomId: h['รหัสอสม'],
-                firstName: h['ชื่อ'], lastName: h['นามสกุล'],
-                address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
-                edu: h['การศึกษา'], phone: h['เบอร์โทร'],
-                disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
-                weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
-                bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
-                photo: h['รูปภาพ(URL)'] || ''
-              }));
-              healthMembers = healthMembers.filter(h => String(h.asomId) !== String(_rem.id));
-              healthMembers.push(..._loaded);
-              saveHealthLocal(_rem.id);
-              if (currentPage === 'health') render();
-            }
-          }).catch(() => {});
-        }
-      }
-    }
-
-    if (financeRes && financeRes.success) finances = financeRes.data || [];
-    if (eventsRes && eventsRes.success) events = eventsRes.data || [];
-    if (actOrderRes && actOrderRes.success) activityOrders = actOrderRes.data || [];
-
-    if (settingsRes && settingsRes.success && settingsRes.data?.marquee_text) {
-      document.getElementById('marqueeText').textContent = settingsRes.data.marquee_text;
-    }
-
-  } catch(err) {
-    members = loadDefaultMembers();
-    applyMemberOverrides();
-    showToast('⚠️ โหลด API ไม่ได้ — แสดงข้อมูลสำรอง');
-  }
-  render();
+async function dbUpdateMemberPhoto(id, photoUrl) {
+  const { error } = await db.from('members').update({ photo_url: photoUrl }).eq('id', id);
+  if (error) { dbErr('อัปเดตรูป', error); return false; }
+  return true;
 }
 
-function applyVillageInfoToHeader() {
-  const h1 = document.querySelector('header h1');
-  const p = document.querySelector('header p');
-  if (h1) h1.textContent = villageInfo.title;
-  if (p) p.textContent = villageInfo.address;
+// ---- FINANCES ----
+async function dbGetFinances() {
+  const { data, error } = await db.from('finances').select('*').order('date', { ascending: false });
+  if (error) { dbErr('โหลดการเงิน', error); return []; }
+  return data.map(f => ({
+    id: f.id, type: f.type, date: f.date, amount: f.amount,
+    category: f.category || '', desc: f.description || ''
+  }));
 }
 
-function loadDefaultMembers() {
-  // Try localStorage first
-  const saved = localStorage.getItem('membersData');
-  if (saved) {
-    try { return JSON.parse(saved); } catch(e) {}
-  }
-  return [
-    {id:1,  name:'นางสาวสมใจ ใจดี',      role:'ประธาน อสม.',   phone:'081-234-5678', photo:'', village:'9'},
-    {id:2,  name:'นางมาลี สวัสดิ์',       role:'รองประธาน',     phone:'082-345-6789', photo:'', village:'9'},
-    {id:3,  name:'นางสาวสุภาพ รักษ์ดี',   role:'เลขานุการ',     phone:'083-456-7890', photo:'', village:'9'},
-    {id:4,  name:'นางวิไล ชื่นใจ',        role:'เหรัญญิก',     phone:'084-567-8901', photo:'', village:'9'},
-    {id:5,  name:'นางสาวรัตนา งามจิต',    role:'กรรมการ',       phone:'085-678-9012', photo:'', village:'9'},
-    {id:6,  name:'นางนงเยาว์ สุขเกษม',    role:'กรรมการ',       phone:'086-789-0123', photo:'', village:'9'},
-    {id:7,  name:'นายประสิทธิ์ มั่นคง',   role:'กรรมการ',       phone:'087-890-1234', photo:'', village:'9'},
-    {id:8,  name:'นางสาวจันทร์ แสงทอง',   role:'กรรมการ',       phone:'088-901-2345', photo:'', village:'9'},
-    {id:9,  name:'นางดวงดาว หอมหวาน',     role:'กรรมการ',       phone:'089-012-3456', photo:'', village:'9'},
-    {id:10, name:'นางสาวศิริพร เจริญผล',   role:'กรรมการ',       phone:'081-123-4567', photo:'', village:'9'},
-    {id:11, name:'นางบัวผัน สดใส',        role:'กรรมการ',       phone:'082-234-5678', photo:'', village:'9'},
-    {id:12, name:'นายสมชาย ตั้งใจ',       role:'กรรมการ',       phone:'083-345-6789', photo:'', village:'9'},
-    {id:13, name:'นางสาวพรรณี สุภาพ',     role:'กรรมการ',       phone:'084-456-7890', photo:'', village:'9'},
-    {id:14, name:'นางลำดวน หวังดี',       role:'กรรมการ',       phone:'085-567-8901', photo:'', village:'9'},
-    {id:15, name:'นางสาวอรทัย ดีงาม',     role:'กรรมการ',       phone:'086-678-9012', photo:'', village:'9'},
-    {id:16, name:'นางเพ็ญศรี แจ่มใส',     role:'กรรมการ',       phone:'087-789-0123', photo:'', village:'9'},
-    {id:17, name:'นายวิชัย สุขศิลป์',     role:'กรรมการ',       phone:'088-890-1234', photo:'', village:'9'},
-    {id:18, name:'นางสาวนวลจันทร์ มีสุข', role:'กรรมการ',       phone:'089-901-2345', photo:'', village:'9'},
-    {id:19, name:'นางประทุม ยิ้มแย้ม',     role:'กรรมการ',       phone:'081-012-3456', photo:'', village:'9'},
-    {id:20, name:'นางสาวทิพย์วัลย์ เจริญ',role:'กรรมการ',       phone:'082-123-4567', photo:'', village:'9'},
-    {id:21, name:'นางชื่นจิต ใจงาม',      role:'กรรมการ',       phone:'083-234-5678', photo:'', village:'9'}
-  ];
+async function dbAddFinance({ type, date, amount, category, desc }) {
+  const { data, error } = await db.from('finances')
+    .insert({ type, date, amount: Number(amount), category, description: desc })
+    .select().single();
+  if (error) { dbErr('เพิ่มรายการ', error); return null; }
+  return data.id;
+}
+
+async function dbUpdateFinance(id, { type, date, amount, category, desc }) {
+  const { error } = await db.from('finances')
+    .update({ type, date, amount: Number(amount), category, description: desc }).eq('id', id);
+  if (error) { dbErr('แก้ไขรายการ', error); return false; }
+  return true;
+}
+
+async function dbDeleteFinance(id) {
+  const { error } = await db.from('finances').delete().eq('id', id);
+  if (error) { dbErr('ลบรายการ', error); return false; }
+  return true;
+}
+
+// ---- EVENTS ----
+async function dbGetEvents() {
+  const { data, error } = await db.from('events').select('*').order('date');
+  if (error) { dbErr('โหลดกิจกรรม', error); return []; }
+  return data.map(e => ({
+    id: e.id, name: e.name, date: e.date,
+    time: e.time || '', place: e.place || '', desc: e.description || ''
+  }));
+}
+
+async function dbAddEvent({ name, date, time, place, desc }) {
+  const { data, error } = await db.from('events')
+    .insert({ name, date, time, place, description: desc }).select().single();
+  if (error) { dbErr('เพิ่มกิจกรรม', error); return null; }
+  return data.id;
+}
+
+async function dbUpdateEvent(id, { name, date, time, place, desc }) {
+  const { error } = await db.from('events')
+    .update({ name, date, time, place, description: desc }).eq('id', id);
+  if (error) { dbErr('แก้ไขกิจกรรม', error); return false; }
+  return true;
+}
+
+async function dbDeleteEvent(id) {
+  const { error } = await db.from('events').delete().eq('id', id);
+  if (error) { dbErr('ลบกิจกรรม', error); return false; }
+  return true;
+}
+
+// ---- ACTIVITY ORDERS ----
+async function dbGetActOrders() {
+  const { data, error } = await db.from('activity_orders').select('*').order('id');
+  if (error) { dbErr('โหลดลำดับ', error); return []; }
+  return data.map(a => ({
+    id: a.id, eventId: a.event_id, eventName: a.event_name || '',
+    attendees: Array.isArray(a.attendees) ? a.attendees : (JSON.parse(a.attendees || '[]'))
+  }));
+}
+
+async function dbAddActOrder({ eventId, eventName, attendees }) {
+  const { data, error } = await db.from('activity_orders')
+    .insert({ event_id: eventId, event_name: eventName, attendees })
+    .select().single();
+  if (error) { dbErr('บันทึกลำดับ', error); return null; }
+  return data.id;
+}
+
+async function dbDeleteActOrder(id) {
+  const { error } = await db.from('activity_orders').delete().eq('id', id);
+  if (error) { dbErr('ลบลำดับ', error); return false; }
+  return true;
+}
+
+// ---- HEALTH MEMBERS ----
+async function dbGetHealth(asomId) {
+  const { data, error } = await db.from('health_members').select('*')
+    .eq('asom_id', asomId).order('id');
+  if (error) { dbErr('โหลดข้อมูลสุขภาพ', error); return []; }
+  return data.map(h => ({
+    id: h.id, asomId: h.asom_id,
+    firstName: h.first_name || '', lastName: h.last_name || '',
+    address: h.address || '', idCard: h.id_card || '',
+    edu: h.education || '', phone: h.phone || '',
+    disease: h.disease || '', height: h.height, weight: h.weight,
+    bmi: h.bmi, bp: h.blood_pressure || '',
+    bloodSugar: h.blood_sugar, photo: h.photo_url || ''
+  }));
+}
+
+async function dbAddHealth(d) {
+  const { data, error } = await db.from('health_members').insert({
+    asom_id: d.asomId, first_name: d.firstName, last_name: d.lastName,
+    address: d.address, id_card: d.idCard, education: d.edu,
+    phone: d.phone, disease: d.disease,
+    height: d.height || null, weight: d.weight || null,
+    bmi: d.bmi || null, blood_pressure: d.bp,
+    blood_sugar: d.bloodSugar || null, photo_url: d.photo || ''
+  }).select().single();
+  if (error) { dbErr('เพิ่มสมาชิก', error); return null; }
+  return data.id;
+}
+
+async function dbUpdateHealth(id, d) {
+  const { error } = await db.from('health_members').update({
+    first_name: d.firstName, last_name: d.lastName,
+    address: d.address, id_card: d.idCard, education: d.edu,
+    phone: d.phone, disease: d.disease,
+    height: d.height || null, weight: d.weight || null,
+    bmi: d.bmi || null, blood_pressure: d.bp,
+    blood_sugar: d.bloodSugar || null, photo_url: d.photo || ''
+  }).eq('id', id);
+  if (error) { dbErr('แก้ไขสมาชิก', error); return false; }
+  return true;
+}
+
+async function dbDeleteHealth(id) {
+  const { error } = await db.from('health_members').delete().eq('id', id);
+  if (error) { dbErr('ลบสมาชิก', error); return false; }
+  return true;
+}
+
+// ---- PASSWORDS ----
+async function dbGetPassword(asomId) {
+  const { data, error } = await db.from('asom_passwords').select('password').eq('asom_id', asomId).single();
+  if (error) return null;
+  return data?.password || null;
+}
+
+async function dbSetPassword(asomId, password) {
+  const { error } = await db.from('asom_passwords')
+    .upsert({ asom_id: asomId, password }, { onConflict: 'asom_id' });
+  if (error) { dbErr('บันทึกรหัสผ่าน', error); return false; }
+  return true;
+}
+
+// ---- SETTINGS ----
+async function dbGetSettings() {
+  const { data, error } = await db.from('settings').select('key,value');
+  if (error) return {};
+  const out = {};
+  (data || []).forEach(row => { out[row.key] = row.value; });
+  return out;
+}
+
+async function dbUpdateSetting(key, value) {
+  const { error } = await db.from('settings').update({ value }).eq('key', key);
+  if (error) { dbErr('บันทึกการตั้งค่า', error); return false; }
+  return true;
 }
 
 // ============================================================
@@ -667,27 +616,115 @@ function loadDefaultMembers() {
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 2800);
 }
-
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
-
 function getInitials(name) {
-  const parts = name.replace(/^(นาง|นาย|นางสาว)/, '').trim().split(' ');
-  return parts[0]?.charAt(0) || '?';
+  return name.replace(/^(นาง|นาย|นางสาว)/, '').trim().charAt(0) || '?';
 }
-
 function formatThaiDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
   return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;
 }
-
 function callPhone(phone) { window.location.href = 'tel:' + phone.replace(/-/g,''); }
 
+function applyVillageInfoToHeader() {
+  document.getElementById('headerTitle').textContent = villageInfo.title;
+  document.getElementById('headerAddress').textContent = villageInfo.address;
+}
+
 // ============================================================
-// NAV
+// INIT
+// ============================================================
+async function initApp() {
+  applyVillageInfoToHeader();
+  await initPhotoCache();
+
+  if (!dbReady) {
+    showToast('❌ ยังไม่ได้ตั้งค่า Supabase — กรุณาดูคำแนะนำในโค้ด');
+    members = loadDefaultMembers();
+    render();
+    return;
+  }
+
+  try {
+    // Load all data in parallel
+    const [membersData, financesData, eventsData, actOrdersData, settings] = await Promise.all([
+      dbGetMembers(),
+      dbGetFinances(),
+      dbGetEvents(),
+      dbGetActOrders(),
+      dbGetSettings()
+    ]);
+
+    members = membersData.length > 0 ? membersData : loadDefaultMembers();
+
+    // Apply local photo overrides
+    members = members.map(m => {
+      const cached = photoCache[String(m.id)];
+      return { ...m, photo: cached || m.photo || '' };
+    });
+
+    finances = financesData;
+    events = eventsData;
+    activityOrders = actOrdersData;
+
+    if (settings.marquee_text) {
+      document.getElementById('marqueeText').textContent = settings.marquee_text;
+    }
+
+    // Auto-restore login session
+    const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
+    if (remembered?.id) {
+      const dbPw = await dbGetPassword(remembered.id);
+      if (dbPw && dbPw === remembered.pw) {
+        loggedInAsom = members.find(m => String(m.id) === String(remembered.id)) || null;
+        if (loggedInAsom) {
+          healthMembers = await dbGetHealth(remembered.id);
+        }
+      }
+    }
+
+    showToast('✅ เชื่อมต่อ Supabase สำเร็จ');
+  } catch(err) {
+    console.error('initApp error:', err);
+    members = loadDefaultMembers();
+    showToast('⚠️ โหลดข้อมูลไม่ได้ — ตรวจสอบการตั้งค่า Supabase');
+  }
+
+  render();
+}
+
+function loadDefaultMembers() {
+  return [
+    {id:1,name:'นางสาวสมใจ ใจดี',role:'ประธาน อสม.',phone:'081-234-5678',photo:'',village:'9'},
+    {id:2,name:'นางมาลี สวัสดิ์',role:'รองประธาน',phone:'082-345-6789',photo:'',village:'9'},
+    {id:3,name:'นางสาวสุภาพ รักษ์ดี',role:'เลขานุการ',phone:'083-456-7890',photo:'',village:'9'},
+    {id:4,name:'นางวิไล ชื่นใจ',role:'เหรัญญิก',phone:'084-567-8901',photo:'',village:'9'},
+    {id:5,name:'นางสาวรัตนา งามจิต',role:'กรรมการ',phone:'085-678-9012',photo:'',village:'9'},
+    {id:6,name:'นางนงเยาว์ สุขเกษม',role:'กรรมการ',phone:'086-789-0123',photo:'',village:'9'},
+    {id:7,name:'นายประสิทธิ์ มั่นคง',role:'กรรมการ',phone:'087-890-1234',photo:'',village:'9'},
+    {id:8,name:'นางสาวจันทร์ แสงทอง',role:'กรรมการ',phone:'088-901-2345',photo:'',village:'9'},
+    {id:9,name:'นางดวงดาว หอมหวาน',role:'กรรมการ',phone:'089-012-3456',photo:'',village:'9'},
+    {id:10,name:'นางสาวศิริพร เจริญผล',role:'กรรมการ',phone:'081-123-4567',photo:'',village:'9'},
+    {id:11,name:'นางบัวผัน สดใส',role:'กรรมการ',phone:'082-234-5678',photo:'',village:'9'},
+    {id:12,name:'นายสมชาย ตั้งใจ',role:'กรรมการ',phone:'083-345-6789',photo:'',village:'9'},
+    {id:13,name:'นางสาวพรรณี สุภาพ',role:'กรรมการ',phone:'084-456-7890',photo:'',village:'9'},
+    {id:14,name:'นางลำดวน หวังดี',role:'กรรมการ',phone:'085-567-8901',photo:'',village:'9'},
+    {id:15,name:'นางสาวอรทัย ดีงาม',role:'กรรมการ',phone:'086-678-9012',photo:'',village:'9'},
+    {id:16,name:'นางเพ็ญศรี แจ่มใส',role:'กรรมการ',phone:'087-789-0123',photo:'',village:'9'},
+    {id:17,name:'นายวิชัย สุขศิลป์',role:'กรรมการ',phone:'088-890-1234',photo:'',village:'9'},
+    {id:18,name:'นางสาวนวลจันทร์ มีสุข',role:'กรรมการ',phone:'089-901-2345',photo:'',village:'9'},
+    {id:19,name:'นางประทุม ยิ้มแย้ม',role:'กรรมการ',phone:'081-012-3456',photo:'',village:'9'},
+    {id:20,name:'นางสาวทิพย์วัลย์ เจริญ',role:'กรรมการ',phone:'082-123-4567',photo:'',village:'9'},
+    {id:21,name:'นางชื่นจิต ใจงาม',role:'กรรมการ',phone:'083-234-5678',photo:'',village:'9'}
+  ];
+}
+
+// ============================================================
+// NAV & RENDER
 // ============================================================
 function showPage(page) {
   currentPage = page;
@@ -700,212 +737,50 @@ function showPage(page) {
 
 function render() {
   const el = document.getElementById('mainContent');
-  if (currentPage === 'home') el.innerHTML = renderHome();
-  else if (currentPage === 'finance') el.innerHTML = renderFinance();
-  else if (currentPage === 'activities') el.innerHTML = renderActivities();
-  else if (currentPage === 'actOrder') el.innerHTML = renderActOrder();
-  else if (currentPage === 'health') el.innerHTML = renderHealth();
-  else if (currentPage === 'summary') el.innerHTML = renderSummary();
-  else if (currentPage === 'contact') el.innerHTML = renderContact();
-  bindEvents();
-}
-
-// ============================================================
-// NATURE SVG ILLUSTRATIONS
-// ============================================================
-function svgRiceField() {
-  return `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#87ceeb"/>
-        <stop offset="100%" stop-color="#c8e8f5"/>
-      </linearGradient>
-      <linearGradient id="field1" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#5a9a3c"/>
-        <stop offset="100%" stop-color="#3d7a28"/>
-      </linearGradient>
-    </defs>
-    <rect width="320" height="160" fill="url(#sky1)"/>
-    <!-- clouds -->
-    <ellipse cx="60" cy="30" rx="28" ry="12" fill="white" opacity=".85"/>
-    <ellipse cx="80" cy="25" rx="22" ry="10" fill="white" opacity=".9"/>
-    <ellipse cx="220" cy="35" rx="32" ry="13" fill="white" opacity=".8"/>
-    <ellipse cx="245" cy="28" rx="20" ry="9" fill="white" opacity=".85"/>
-    <!-- mountains far -->
-    <polygon points="0,90 60,50 120,85 160,55 220,80 280,52 320,75 320,100 0,100" fill="#6aaa58" opacity=".6"/>
-    <!-- rice field terraces -->
-    <rect x="0" y="95" width="320" height="65" fill="url(#field1)"/>
-    <!-- water lines in rice field -->
-    <line x1="0" y1="108" x2="320" y2="108" stroke="#7ecfef" stroke-width="1.5" opacity=".5"/>
-    <line x1="0" y1="120" x2="320" y2="120" stroke="#7ecfef" stroke-width="1.5" opacity=".4"/>
-    <line x1="0" y1="132" x2="320" y2="132" stroke="#7ecfef" stroke-width="1.5" opacity=".35"/>
-    <!-- rice stalks -->
-    ${Array.from({length:28},(_,i)=>{const x=5+i*11,h=8+Math.sin(i)*3;return `<line x1="${x}" y1="100" x2="${x+1}" y2="${100-h}" stroke="#a8d57a" stroke-width="1.5"/>
-    <ellipse cx="${x+1}" cy="${100-h}" rx="2" ry="3" fill="#c8e888" transform="rotate(-15,${x+1},${100-h})"/>`}).join('')}
-    <!-- sun -->
-    <circle cx="270" cy="28" r="14" fill="#ffe066" opacity=".9"/>
-    <circle cx="270" cy="28" r="10" fill="#ffd700"/>
-  </svg>`;
-}
-
-function svgVillage() {
-  return `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#b8dff5"/>
-        <stop offset="100%" stop-color="#dff0ff"/>
-      </linearGradient>
-    </defs>
-    <rect width="320" height="160" fill="url(#sky2)"/>
-    <!-- ground -->
-    <rect x="0" y="115" width="320" height="45" fill="#7ab648"/>
-    <rect x="0" y="125" width="320" height="35" fill="#5a9a30"/>
-    <!-- road -->
-    <rect x="130" y="115" width="60" height="45" fill="#c8b890"/>
-    <rect x="155" y="115" width="10" height="45" fill="#e8d8a0" opacity=".5"/>
-    <!-- house 1 -->
-    <rect x="20" y="85" width="55" height="35" fill="#f5e6c8"/>
-    <rect x="15" y="85" width="65" height="5" fill="#d4a017"/>
-    <polygon points="15,85 47,60 80,85" fill="#c0392b"/>
-    <rect x="30" y="95" width="14" height="20" fill="#7ecfef"/>
-    <rect x="55" y="95" width="12" height="14" fill="#a8d5f0"/>
-    <!-- house 2 -->
-    <rect x="240" y="80" width="65" height="40" fill="#faf0dc"/>
-    <rect x="235" y="80" width="75" height="5" fill="#e8a820"/>
-    <polygon points="235,80 272,52 310,80" fill="#a93226"/>
-    <rect x="255" y="93" width="14" height="22" fill="#7ecfef"/>
-    <rect x="278" y="93" width="14" height="14" fill="#a8d5f0"/>
-    <!-- trees -->
-    <rect x="105" y="100" width="5" height="20" fill="#8B5E3C"/>
-    <circle cx="107" cy="95" r="14" fill="#2d8a55"/>
-    <circle cx="100" cy="100" r="10" fill="#3aa068"/>
-    <rect x="190" y="98" width="5" height="22" fill="#8B5E3C"/>
-    <circle cx="192" cy="93" r="13" fill="#2d8a55"/>
-    <circle cx="198" cy="99" r="9" fill="#4caf7d"/>
-    <!-- clouds -->
-    <ellipse cx="80" cy="28" rx="30" ry="12" fill="white" opacity=".9"/>
-    <ellipse cx="100" cy="22" rx="22" ry="9" fill="white" opacity=".85"/>
-    <ellipse cx="230" cy="32" rx="28" ry="11" fill="white" opacity=".85"/>
-    <!-- smoke from chimney -->
-    <circle cx="57" cy="65" r="4" fill="white" opacity=".6"/>
-    <circle cx="60" cy="58" r="5" fill="white" opacity=".4"/>
-    <circle cx="56" cy="51" r="4" fill="white" opacity=".25"/>
-  </svg>`;
-}
-
-function svgTemple() {
-  return `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#ffe8a0"/>
-        <stop offset="100%" stop-color="#ffd060"/>
-      </linearGradient>
-    </defs>
-    <rect width="320" height="160" fill="url(#sky3)"/>
-    <!-- ground -->
-    <rect x="0" y="118" width="320" height="42" fill="#6aaa40"/>
-    <rect x="0" y="128" width="320" height="32" fill="#4a8a2a"/>
-    <!-- temple body -->
-    <rect x="80" y="70" width="160" height="55" fill="#f5e0a0"/>
-    <rect x="70" y="65" width="180" height="10" fill="#d4a017"/>
-    <!-- tiered roof -->
-    <polygon points="100,65 160,20 220,65" fill="#c0392b"/>
-    <polygon points="110,50 160,15 210,50" fill="#e05252"/>
-    <polygon points="120,38 160,8 200,38" fill="#c0392b"/>
-    <!-- gold finial -->
-    <line x1="160" y1="8" x2="160" y2="2" stroke="#d4a017" stroke-width="3"/>
-    <circle cx="160" cy="2" r="4" fill="#d4a017"/>
-    <!-- pillars -->
-    <rect x="100" y="75" width="12" height="50" fill="#e8c870"/>
-    <rect x="208" y="75" width="12" height="50" fill="#e8c870"/>
-    <!-- door -->
-    <rect x="145" y="90" width="30" height="35" fill="#8B5E3C"/>
-    <rect x="152" y="95" width="7" height="10" fill="#c8a060"/>
-    <rect x="161" y="95" width="7" height="10" fill="#c8a060"/>
-    <!-- window ornaments -->
-    <rect x="95" y="82" width="20" height="15" fill="#7ecfef" rx="2"/>
-    <rect x="205" y="82" width="20" height="15" fill="#7ecfef" rx="2"/>
-    <!-- trees flanking -->
-    <rect x="40" y="95" width="6" height="28" fill="#8B5E3C"/>
-    <circle cx="43" cy="88" r="16" fill="#2d8a55"/>
-    <rect x="274" y="95" width="6" height="28" fill="#8B5E3C"/>
-    <circle cx="277" cy="88" r="16" fill="#2d8a55"/>
-    <!-- clouds -->
-    <ellipse cx="50" cy="30" rx="25" ry="10" fill="white" opacity=".7"/>
-    <ellipse cx="280" cy="25" rx="28" ry="11" fill="white" opacity=".65"/>
-  </svg>`;
-}
-
-function svgCommunity() {
-  return `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sky4" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#c8f0d8"/>
-        <stop offset="100%" stop-color="#f0faf4"/>
-      </linearGradient>
-    </defs>
-    <rect width="320" height="160" fill="url(#sky4)"/>
-    <!-- hills -->
-    <ellipse cx="80" cy="130" rx="100" ry="50" fill="#5aab38"/>
-    <ellipse cx="240" cy="135" rx="110" ry="48" fill="#4a9a2a"/>
-    <ellipse cx="160" cy="140" rx="130" ry="40" fill="#3d8a22"/>
-    <!-- path -->
-    <path d="M130,160 Q160,130 190,160" fill="#c8b080" opacity=".7"/>
-    <!-- group of people silhouettes -->
-    <circle cx="120" cy="108" r="8" fill="#1a5c38"/>
-    <rect x="115" y="116" width="10" height="18" fill="#1a5c38" rx="2"/>
-    <circle cx="145" cy="105" r="8" fill="#2d8a55"/>
-    <rect x="140" y="113" width="10" height="18" fill="#2d8a55" rx="2"/>
-    <circle cx="170" cy="107" r="8" fill="#1a5c38"/>
-    <rect x="165" y="115" width="10" height="18" fill="#1a5c38" rx="2"/>
-    <circle cx="195" cy="104" r="8" fill="#4caf7d"/>
-    <rect x="190" y="112" width="10" height="18" fill="#4caf7d" rx="2"/>
-    <!-- holding hands lines -->
-    <line x1="125" y1="122" x2="140" y2="120" stroke="#d4a017" stroke-width="2"/>
-    <line x1="150" y1="120" x2="165" y2="122" stroke="#d4a017" stroke-width="2"/>
-    <line x1="175" y1="122" x2="190" y2="119" stroke="#d4a017" stroke-width="2"/>
-    <!-- floating hearts/health symbols -->
-    <text x="105" y="96" font-size="12" fill="#e05252">♥</text>
-    <text x="155" y="90" font-size="14" fill="#d4a017">✦</text>
-    <text x="205" y="93" font-size="12" fill="#e05252">♥</text>
-    <!-- trees background -->
-    <rect x="30" y="90" width="5" height="25" fill="#8B5E3C"/>
-    <circle cx="32" cy="84" r="12" fill="#2d8a55" opacity=".8"/>
-    <rect x="280" y="88" width="5" height="27" fill="#8B5E3C"/>
-    <circle cx="282" cy="82" r="13" fill="#3aa068" opacity=".8"/>
-    <!-- clouds -->
-    <ellipse cx="70" cy="28" rx="28" ry="11" fill="white" opacity=".8"/>
-    <ellipse cx="260" cy="35" rx="32" ry="12" fill="white" opacity=".75"/>
-  </svg>`;
+  if (currentPage === 'home')       el.innerHTML = renderHome();
+  else if (currentPage === 'finance')     el.innerHTML = renderFinance();
+  else if (currentPage === 'activities')  el.innerHTML = renderActivities();
+  else if (currentPage === 'actOrder')    el.innerHTML = renderActOrder();
+  else if (currentPage === 'health')      el.innerHTML = renderHealth();
+  else if (currentPage === 'summary')     el.innerHTML = renderSummary();
+  else if (currentPage === 'contact')     el.innerHTML = renderContact();
 }
 
 // ============================================================
 // HOME
 // ============================================================
 function renderHome() {
+  const dbBadge = dbReady
+    ? `<span class="db-status connected">🟢 Supabase เชื่อมต่อแล้ว</span>`
+    : `<span class="db-status error">🔴 ยังไม่ได้ตั้งค่า Supabase</span>`;
+
   const adminBar = isAdmin ? `<div class="admin-bar">
     <span class="admin-badge">🔑 โหมดแอดมิน</span>
-    <span style="font-size:13px;color:var(--text-sub);">สามารถแก้ไขข้อมูลทั้งหมดได้</span>
+    ${dbBadge}
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openModal('marqueeEditModal');prepareMarquee()">📢 แก้ไขประกาศ</button>
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openEditVillageModal()">🏘️ แก้ไขข้อมูลหมู่บ้าน</button>
     <button class="btn-danger" style="font-size:12px;padding:6px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
-  </div>` : `<div style="text-align:right;margin-bottom:12px;"><button onclick="toggleAdmin()" style="background:none;border:1.5px solid var(--green-mid);border-radius:8px;padding:6px 14px;cursor:pointer;font-family:Sarabun,sans-serif;font-size:13px;color:var(--green-dark);">🔑 เข้าสู่โหมดแอดมิน</button></div>`;
+  </div>` : `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    ${dbBadge}
+    <button onclick="toggleAdmin()" style="background:none;border:1.5px solid var(--green-mid);border-radius:8px;padding:6px 14px;cursor:pointer;font-family:Sarabun,sans-serif;font-size:13px;color:var(--green-dark);">🔑 เข้าสู่โหมดแอดมิน</button>
+  </div>`;
 
   const cards = members.map(m => {
     const photo = m.photo
       ? `<img src="${m.photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--green-light);">`
       : `<div class="member-photo">${getInitials(m.name)}</div>`;
-    const editBtn = isAdmin ? `<button class="photo-edit-btn" onclick="document.getElementById('photoFile_${m.id}').click()" title="เปลี่ยนรูป">✎</button>` : '';
-    const body = isAdmin ? `
-      <div style="margin-top:8px;">
-        <input class="edit-field" value="${m.name}" id="ename_${m.id}" placeholder="ชื่อ-นามสกุล">
-        <input class="edit-field" value="${m.role}" id="erole_${m.id}" placeholder="ตำแหน่ง">
-        <input class="edit-field" value="${m.phone}" id="ephone_${m.id}" placeholder="เบอร์โทร">
-        <button class="save-btn" onclick="saveMember(${m.id})">💾 บันทึก</button>
-      </div>` : `
-      <div class="member-name">${m.name}</div>
-      <div class="member-role">${m.role}</div>
-      <div class="member-phone" onclick="callPhone('${m.phone}')">📞 ${m.phone}</div>`;
+    const editBtn = isAdmin
+      ? `<button class="photo-edit-btn" onclick="document.getElementById('photoFile_${m.id}').click()" title="เปลี่ยนรูป">✎</button>` : '';
+    const body = isAdmin
+      ? `<div style="margin-top:8px;">
+           <button class="save-btn" style="background:var(--gold);margin-bottom:6px;" onclick="openEditMemberModal(${m.id})">✏️ แก้ไข</button>
+           <div class="member-name">${m.name}</div>
+           <div class="member-role">${m.role}</div>
+           <div class="member-phone">📞 ${m.phone}</div>
+         </div>`
+      : `<div class="member-name">${m.name}</div>
+         <div class="member-role">${m.role}</div>
+         <div class="member-phone" onclick="callPhone('${m.phone}')">📞 ${m.phone}</div>`;
     return `<div class="member-card">
       <div class="member-photo-wrap">${photo}${editBtn}</div>
       ${body}
@@ -918,7 +793,7 @@ function renderHome() {
     <p class="section-title">${villageInfo.title}</p>
     <p class="section-sub">${villageInfo.address} • รวม ${members.length} คน</p>
     <div style="margin-bottom:20px;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(26,92,56,0.18);position:relative;">
-      <img src="images/hero.jpg" alt="บ้านใหม่เจริญไพร หมู่ 9" style="width:100%;height:300px;object-fit:cover;display:block;">
+      <img src="images/hero.jpg" alt="บ้านใหม่เจริญไพร" style="width:100%;height:300px;object-fit:cover;display:block;" onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a5c38,#4caf7d)'">
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05),rgba(26,92,56,0.72));display:flex;align-items:flex-end;padding:24px 28px;">
         <div>
           <div style="color:var(--gold-light);font-family:Kanit,sans-serif;font-size:24px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.7);">บ้านใหม่เจริญไพร หมู่ 9</div>
@@ -929,54 +804,50 @@ function renderHome() {
     <div class="member-grid">${cards}</div>`;
 }
 
-async function saveMember(id) {
+function openEditMemberModal(id) {
   const m = members.find(x => x.id === id);
   if (!m) return;
-  const name  = document.getElementById('ename_'+id)?.value.trim()  || m.name;
-  const role  = document.getElementById('erole_'+id)?.value.trim()  || m.role;
-  const phone = document.getElementById('ephone_'+id)?.value.trim() || m.phone;
+  document.getElementById('emId').value = id;
+  document.getElementById('emName').value = m.name;
+  document.getElementById('emRole').value = m.role;
+  document.getElementById('emPhone').value = m.phone;
+  openModal('editMemberModal');
+}
 
-  // Update in-memory state immediately
-  m.name = name; m.role = role; m.phone = phone;
+async function saveMemberFromModal() {
+  const id = Number(document.getElementById('emId').value);
+  const name = document.getElementById('emName').value.trim();
+  const role = document.getElementById('emRole').value.trim();
+  const phone = document.getElementById('emPhone').value.trim();
+  if (!name) { showToast('❌ กรุณากรอกชื่อ'); return; }
 
-  // Save text-only override (separate from photos — never quota-blocks)
-  const ok = saveMemberTextOverride(id, { name, role, phone });
-  if (ok) {
-    showToast('✅ บันทึกข้อมูลแล้ว');
-  } else {
-    showToast('⚠️ บันทึกในเครื่องไม่ได้ (storage เต็ม) แต่แสดงผลในหน้านี้แล้ว');
-  }
+  const m = members.find(x => x.id === id);
+  if (m) { m.name = name; m.role = role; m.phone = phone; }
 
+  closeModal('editMemberModal');
   render();
 
-  // Non-blocking API sync
-  try {
-    await apiPost({ action: 'updateMember', data: { id, 'ชื่อ-สกุล': name, 'ตำแหน่ง': role, 'เบอร์โทร': phone } });
-  } catch(e) {}
+  const ok = await dbUpdateMember(id, { name, role, phone });
+  if (ok) showToast('✅ บันทึกข้อมูลลง Supabase แล้ว');
 }
 
 async function uploadMemberPhoto(id) {
-  const fileEl = document.getElementById('photoFile_'+id);
+  const fileEl = document.getElementById('photoFile_' + id);
   const file = fileEl?.files[0];
   if (!file) return;
   showToast('⏳ กำลังประมวลผลรูปภาพ...');
   try {
-    // Resize & compress to 220×220 JPEG (~15-25 KB) before storing
     const photoUrl = await resizeImage(file, 220, 0.82);
     const m = members.find(x => x.id === id);
     if (m) m.photo = photoUrl;
-
-    // Store in per-member key — never touches memberOverrides
-    const ok = await saveMemberPhotoOverride(id, photoUrl);
-    if (ok) {
-      showToast('✅ อัปเดตรูปภาพแล้ว — บันทึกถาวร');
-    } else {
-      showToast('⚠️ บันทึกรูปไม่ได้ (storage เต็ม) แต่แสดงผลในหน้านี้แล้ว');
-    }
+    photoCache[String(id)] = photoUrl;
+    try { await photoDB.set(String(id), photoUrl); } catch(e) {}
     render();
-    try { await apiPost({ action: 'updateMemberPhoto', data: { id, photoUrl } }); } catch(e) {}
+    const ok = await dbUpdateMemberPhoto(id, photoUrl);
+    if (ok) showToast('✅ อัปเดตรูปภาพลง Supabase แล้ว');
+    else showToast('⚠️ บันทึกรูปลง Supabase ไม่สำเร็จ (แต่แสดงผลแล้ว)');
   } catch(err) {
-    showToast('❌ โหลดรูปไม่สำเร็จ กรุณาลองใหม่');
+    showToast('❌ โหลดรูปไม่สำเร็จ');
   }
 }
 
@@ -989,9 +860,6 @@ async function toggleAdmin() {
   } else { isAdmin = false; render(); }
 }
 
-// ============================================================
-// EDIT VILLAGE INFO (Admin)
-// ============================================================
 function openEditVillageModal() {
   document.getElementById('vTitle').value = villageInfo.title;
   document.getElementById('vAddress').value = villageInfo.address;
@@ -1012,11 +880,11 @@ function saveVillageInfo() {
 // FINANCE
 // ============================================================
 function renderFinance() {
-  const income = finances.filter(f => f.type === 'income').reduce((s, f) => s + Number(f.amount), 0);
-  const expense = finances.filter(f => f.type === 'expense').reduce((s, f) => s + Number(f.amount), 0);
+  const income = finances.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount),0);
+  const expense = finances.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount),0);
   const balance = income - expense;
 
-  const rows = finances.slice().reverse().map(f => `
+  const rows = finances.map(f => `
     <tr>
       <td>${f.date||'-'}</td>
       <td><span class="badge-${f.type}">${f.type==='income'?'รายรับ':'รายจ่าย'}</span></td>
@@ -1024,14 +892,14 @@ function renderFinance() {
       <td>${f.desc||'-'}</td>
       <td style="text-align:right;font-weight:600;color:${f.type==='income'?'#2e7d32':'#c62828'}">${Number(f.amount).toLocaleString('th')} ฿</td>
       <td>
-        <button class="btn-edit" onclick="editFinance('${f.id}')">แก้ไข</button>
-        <button class="btn-danger" style="margin-left:4px;" onclick="deleteFinance('${f.id}')">ลบ</button>
+        <button class="btn-edit" onclick="editFinance(${f.id})">แก้ไข</button>
+        <button class="btn-danger" style="margin-left:4px;" onclick="deleteFinance(${f.id})">ลบ</button>
       </td>
     </tr>`).join('') || '<tr><td colspan="6" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีข้อมูล</td></tr>';
 
   return `
     <p class="section-title">💰 รายรับ-รายจ่าย</p>
-    <p class="section-sub">บันทึกการเงินของกลุ่ม อสม.</p>
+    <p class="section-sub">บันทึกการเงินของกลุ่ม อสม. — ข้อมูลเก็บใน Supabase</p>
     <div class="finance-summary">
       <div class="fin-card"><div class="label">รายรับรวม</div><div class="amount income">${income.toLocaleString('th')} ฿</div></div>
       <div class="fin-card"><div class="label">รายจ่ายรวม</div><div class="amount expense">${expense.toLocaleString('th')} ฿</div></div>
@@ -1064,35 +932,31 @@ function renderFinance() {
 }
 
 async function saveFinance() {
-  const type = document.getElementById('finType').value;
-  const date = document.getElementById('finDate').value;
-  const amount = document.getElementById('finAmount').value;
-  const category = document.getElementById('finCategory').value;
-  const desc = document.getElementById('finDesc').value;
-  if (!amount) { alert('กรุณาใส่จำนวนเงิน'); return; }
+  const payload = {
+    type: document.getElementById('finType').value,
+    date: document.getElementById('finDate').value,
+    amount: document.getElementById('finAmount').value,
+    category: document.getElementById('finCategory').value,
+    desc: document.getElementById('finDesc').value
+  };
+  if (!payload.amount) { alert('กรุณาใส่จำนวนเงิน'); return; }
+
+  showToast('⏳ กำลังบันทึก...');
 
   if (editingFinId) {
-    // Update local
-    const f = finances.find(x => x.id === editingFinId);
-    if (f) { f.type=type; f.date=date; f.amount=amount; f.category=category; f.desc=desc; }
+    const ok = await dbUpdateFinance(editingFinId, payload);
+    if (ok) {
+      const f = finances.find(x => x.id === editingFinId);
+      if (f) Object.assign(f, payload);
+      showToast('✅ แก้ไขรายการแล้ว');
+    }
     editingFinId = null;
-    showToast('✅ แก้ไขรายการแล้ว (local)');
-    try {
-      const res = await apiPost({ action: 'editFinance', data: { id: editingFinId, type, date, amount, category, desc } });
-      if (res.success) showToast('✅ แก้ไขรายการแล้ว');
-    } catch(e) {}
   } else {
-    const newId = 'fin_' + Date.now();
-    finances.push({ id: newId, type, date, amount, category, desc });
-    showToast('✅ บันทึกรายการแล้ว (local)');
-    try {
-      const res = await apiPost({ action: 'addFinance', data: { type, date, amount, category, desc, user: loggedInAsom?.name || '' } });
-      if (res.success) {
-        const f = finances.find(x => x.id === newId);
-        if (f) f.id = res.id;
-        showToast('✅ บันทึกรายการแล้ว');
-      }
-    } catch(e) {}
+    const newId = await dbAddFinance(payload);
+    if (newId) {
+      finances.unshift({ id: newId, ...payload });
+      showToast('✅ บันทึกรายการลง Supabase แล้ว');
+    }
   }
   render();
 }
@@ -1114,11 +978,12 @@ function cancelEditFinance() { editingFinId = null; render(); }
 
 async function deleteFinance(id) {
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
-  finances = finances.filter(f => f.id !== id);
-  render(); showToast('🗑️ ลบรายการแล้ว');
-  try {
-    await apiPost({ action: 'deleteFinance', id });
-  } catch(e) {}
+  const ok = await dbDeleteFinance(id);
+  if (ok) {
+    finances = finances.filter(f => f.id !== id);
+    showToast('🗑️ ลบรายการแล้ว');
+    render();
+  }
 }
 
 // ============================================================
@@ -1130,15 +995,13 @@ function renderActivities() {
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
 
-  let cells = '';
-  const dayNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-  cells += dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+  let cells = ['อา','จ','อ','พ','พฤ','ศ','ส'].map(d => `<div class="cal-day-name">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) cells += '<div class="cal-day other-month"></div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dayEvents = events.filter(e => e.date === dateStr);
     const isToday = d===today.getDate() && calMonth===today.getMonth() && calYear===today.getFullYear();
-    cells += `<div class="cal-day${isToday?' today':''}${dayEvents.length?' has-event':''}" onclick="">
+    cells += `<div class="cal-day${isToday?' today':''}${dayEvents.length?' has-event':''}">
       <div class="day-num">${d}</div>
       ${dayEvents.map(e => `<div class="event-dot">${e.name}</div>`).join('')}
     </div>`;
@@ -1153,8 +1016,8 @@ function renderActivities() {
         ${e.desc ? `<div style="font-size:12px;color:var(--text-sub);margin-top:2px;">${e.desc}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
-        <button class="btn-edit" style="font-size:11px;padding:4px 10px;" onclick="openEditEvent('${e.id}')">แก้ไข</button>
-        <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="deleteEvent('${e.id}')">ลบ</button>
+        <button class="btn-edit" style="font-size:11px;padding:4px 10px;" onclick="openEditEvent(${e.id})">แก้ไข</button>
+        <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="deleteEvent(${e.id})">ลบ</button>
       </div>
     </div>`).join('') || '<p style="color:var(--gray-mid);text-align:center;padding:16px;">ยังไม่มีกิจกรรม</p>';
 
@@ -1184,6 +1047,7 @@ function changeMonth(dir) {
 
 function openAddEventModal() {
   editingEventId = null;
+  document.getElementById('eventModalTitle').textContent = '📅 เพิ่มกิจกรรม';
   ['evtName','evtDate','evtTime','evtPlace','evtDesc'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -1194,6 +1058,7 @@ function openEditEvent(id) {
   const e = events.find(x => x.id === id);
   if (!e) return;
   editingEventId = id;
+  document.getElementById('eventModalTitle').textContent = '✏️ แก้ไขกิจกรรม';
   document.getElementById('evtName').value = e.name || '';
   document.getElementById('evtDate').value = e.date || '';
   document.getElementById('evtTime').value = e.time || '';
@@ -1203,33 +1068,38 @@ function openEditEvent(id) {
 }
 
 async function saveEvent() {
-  const name = document.getElementById('evtName').value;
+  const name = document.getElementById('evtName').value.trim();
   const date = document.getElementById('evtDate').value;
   if (!name || !date) { alert('กรุณาใส่ชื่อและวันที่'); return; }
-  const data = { name, date, time: document.getElementById('evtTime').value, place: document.getElementById('evtPlace').value, desc: document.getElementById('evtDesc').value };
+  const payload = { name, date, time: document.getElementById('evtTime').value, place: document.getElementById('evtPlace').value, desc: document.getElementById('evtDesc').value };
+
+  showToast('⏳ กำลังบันทึก...');
 
   if (editingEventId) {
-    const i = events.findIndex(x => x.id === editingEventId);
-    if (i >= 0) events[i] = { id: editingEventId, ...data };
-    showToast('✅ แก้ไขกิจกรรมแล้ว');
-    try { await apiPost({ action: 'editEvent', data: { id: editingEventId, ...data } }); } catch(e) {}
+    const ok = await dbUpdateEvent(editingEventId, payload);
+    if (ok) {
+      const i = events.findIndex(x => x.id === editingEventId);
+      if (i >= 0) events[i] = { id: editingEventId, ...payload };
+      showToast('✅ แก้ไขกิจกรรมแล้ว');
+    }
   } else {
-    const newId = 'evt_' + Date.now();
-    events.push({ id: newId, ...data });
-    showToast('✅ เพิ่มกิจกรรมแล้ว');
-    try {
-      const res = await apiPost({ action: 'addEvent', data });
-      if (res.success) { const ev = events.find(x => x.id === newId); if (ev) ev.id = res.id; }
-    } catch(e) {}
+    const newId = await dbAddEvent(payload);
+    if (newId) {
+      events.push({ id: newId, ...payload });
+      showToast('✅ เพิ่มกิจกรรมลง Supabase แล้ว');
+    }
   }
   closeModal('addEventModal'); render();
 }
 
 async function deleteEvent(id) {
   if (!confirm('ยืนยันการลบกิจกรรม?')) return;
-  events = events.filter(e => e.id !== id);
-  render(); showToast('🗑️ ลบกิจกรรมแล้ว');
-  try { await apiPost({ action: 'deleteEvent', id }); } catch(e) {}
+  const ok = await dbDeleteEvent(id);
+  if (ok) {
+    events = events.filter(e => e.id !== id);
+    showToast('🗑️ ลบกิจกรรมแล้ว');
+    render();
+  }
 }
 
 // ============================================================
@@ -1240,9 +1110,9 @@ function renderActOrder() {
   const eventOptions = events.map(e => `<option value="${e.id}">${e.name} (${formatThaiDate(e.date)})</option>`).join('');
 
   const orderCards = activityOrders.map(ao => {
-    const evt = events.find(e => e.id === ao.eventId);
+    const evt = events.find(e => e.id === ao.eventId || String(e.id) === String(ao.eventId));
     const attendees = ao.attendees.map((aid, i) => {
-      const m = members.find(x => x.id === Number(aid));
+      const m = members.find(x => String(x.id) === String(aid));
       return m ? `<div class="attendee-badge"><span class="order-num">${i+1}</span>${m.name}</div>` : '';
     }).join('');
     return `<div class="activity-item">
@@ -1251,7 +1121,7 @@ function renderActOrder() {
           <div class="act-title">${evt ? evt.name : ao.eventName || 'กิจกรรม'}</div>
           <div class="act-info">📅 ${evt ? formatThaiDate(evt.date) : '-'} | 📍 ${evt?.place||'-'}</div>
         </div>
-        <button class="btn-danger" onclick="deleteActOrder('${ao.id}')">ลบ</button>
+        <button class="btn-danger" onclick="deleteActOrder(${ao.id})">ลบ</button>
       </div>
       <div><strong style="font-size:13px;color:var(--text-sub);">ลำดับเข้าร่วม (${ao.attendees.length} คน):</strong></div>
       <div class="attendees-list">${attendees || '<span style="color:var(--gray-mid);font-size:13px;">ยังไม่มีรายชื่อ</span>'}</div>
@@ -1264,8 +1134,8 @@ function renderActOrder() {
     <div class="activity-select">
       <h3 style="font-family:Kanit,sans-serif;font-size:16px;color:var(--green-dark);margin-bottom:14px;">➕ บันทึกลำดับกิจกรรม</h3>
       <div class="form-group"><label>เลือกกิจกรรม</label>
-        <select id="aoEvent">${eventOptions || '<option>ยังไม่มีกิจกรรม</option>'}</select></div>
-      <div class="form-group mt-4"><label>เลือกผู้เข้าร่วม (ตามลำดับ — กด Ctrl เพื่อเลือกหลายคน)</label>
+        <select id="aoEvent">${eventOptions || '<option>ยังไม่มีกิจกรรม — เพิ่มกิจกรรมก่อน</option>'}</select></div>
+      <div class="form-group mt-4"><label>เลือกผู้เข้าร่วม (กด Ctrl/⌘ เพื่อเลือกหลายคน)</label>
         <select id="aoMember" multiple style="height:160px;border:1.5px solid #dde8e1;border-radius:8px;padding:4px;font-family:Sarabun,sans-serif;font-size:13px;width:100%;">
           ${memberOptions}
         </select>
@@ -1280,32 +1150,25 @@ async function saveActOrder() {
   const sel = document.getElementById('aoMember').selectedOptions;
   const attendees = Array.from(sel).map(o => o.value);
   if (!eventId || attendees.length === 0) { alert('กรุณาเลือกกิจกรรมและผู้เข้าร่วม'); return; }
-  const evt = events.find(e => e.id === eventId);
-  const newId = 'ao_' + Date.now();
-  activityOrders.push({ id: newId, eventId, eventName: evt?.name||'', attendees });
-  render(); showToast('✅ บันทึกลำดับแล้ว');
-  try {
-    const res = await apiPost({ action: 'addActOrder', data: { eventId, eventName: evt?.name||'', attendees } });
-    if (res.success) { const ao = activityOrders.find(x => x.id === newId); if (ao) ao.id = res.id; }
-  } catch(e) {}
+  const evt = events.find(e => String(e.id) === String(eventId));
+
+  showToast('⏳ กำลังบันทึก...');
+  const newId = await dbAddActOrder({ eventId: Number(eventId), eventName: evt?.name||'', attendees });
+  if (newId) {
+    activityOrders.push({ id: newId, eventId: Number(eventId), eventName: evt?.name||'', attendees });
+    showToast('✅ บันทึกลำดับลง Supabase แล้ว');
+    render();
+  }
 }
 
 async function deleteActOrder(id) {
   if (!confirm('ยืนยันการลบ?')) return;
-  activityOrders = activityOrders.filter(a => a.id !== id);
-  render();
-  try { await apiPost({ action: 'deleteActOrder', id }); } catch(e) {}
-}
-
-// ============================================================
-// HEALTH DATA PERSISTENCE — บันทึกลูกป๊อกลง localStorage ต่อ อสม.
-// ============================================================
-function saveHealthLocal(asomId) {
-  const mine = healthMembers.filter(h => String(h.asomId) === String(asomId));
-  try { localStorage.setItem('healthLocal_' + asomId, JSON.stringify(mine)); } catch(e) {}
-}
-function loadHealthLocal(asomId) {
-  try { return JSON.parse(localStorage.getItem('healthLocal_' + asomId) || '[]'); } catch(e) { return []; }
+  const ok = await dbDeleteActOrder(id);
+  if (ok) {
+    activityOrders = activityOrders.filter(a => a.id !== id);
+    showToast('🗑️ ลบลำดับแล้ว');
+    render();
+  }
 }
 
 // ============================================================
@@ -1318,34 +1181,34 @@ function renderHealth() {
 
   const rows = myMembers.map(h => {
     const bmiVal = parseFloat(h.bmi) || 0;
-    let bmiClass = 'bmi-normal', bmiLabel = 'ปกติ';
-    if (bmiVal < 18.5) { bmiClass='bmi-under'; bmiLabel='ผอม'; }
-    else if (bmiVal >= 25 && bmiVal < 30) { bmiClass='bmi-over'; bmiLabel='น้ำหนักเกิน'; }
-    else if (bmiVal >= 30) { bmiClass='bmi-obese'; bmiLabel='อ้วน'; }
-    const photoHtml = h.photo
+    let bc='bmi-normal', bl='ปกติ';
+    if (bmiVal < 18.5) { bc='bmi-under'; bl='ผอม'; }
+    else if (bmiVal >= 25 && bmiVal < 30) { bc='bmi-over'; bl='น้ำหนักเกิน'; }
+    else if (bmiVal >= 30) { bc='bmi-obese'; bl='อ้วน'; }
+    const ph = h.photo
       ? `<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);" onerror="this.outerHTML='<span style=font-size:26px>👤</span>'">`
       : `<span style="font-size:26px;">👤</span>`;
     return `<tr>
-      <td style="text-align:center;">${photoHtml}</td>
+      <td style="text-align:center;padding:8px;">${ph}</td>
       <td>${h.firstName} ${h.lastName}</td>
       <td>${h.address||'-'}</td>
       <td>${h.phone||'-'}</td>
       <td>${h.disease||'-'}</td>
       <td>${h.height||'-'}</td>
       <td>${h.weight||'-'}</td>
-      <td><span class="bmi-badge ${bmiClass}">${h.bmi||'-'} ${bmiLabel}</span></td>
+      <td><span class="bmi-badge ${bc}">${h.bmi||'-'} ${bl}</span></td>
       <td>${h.bp||'-'}</td>
       <td>${h.bloodSugar||'-'}</td>
       <td>
-        <button class="btn-edit" onclick="editHealthMember('${h.id}')">แก้ไข</button>
-        <button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember('${h.id}')">ลบ</button>
+        <button class="btn-edit" onclick="editHealthMember(${h.id})">แก้ไข</button>
+        <button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember(${h.id})">ลบ</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="11" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีสมาชิก</td></tr>';
+  }).join('') || '<tr><td colspan="11" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีสมาชิก กดปุ่ม "เพิ่มสมาชิก" เพื่อเริ่มต้น</td></tr>';
 
   return `
     <p class="section-title">👨‍👩‍👧 รายชื่อ อสม. ที่ดูแลลูกป๊อก</p>
-    <p class="section-sub">ข้อมูลสมาชิกในความดูแลของ: <strong>${loggedInAsom.name}</strong></p>
+    <p class="section-sub">ข้อมูลสมาชิกในความดูแลของ: <strong>${loggedInAsom.name}</strong> — บันทึกใน Supabase</p>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
       <div class="filter-bar">
         <input id="filterName" placeholder="ค้นหาชื่อ..." oninput="filterHealth()" style="width:160px;">
@@ -1366,7 +1229,19 @@ function renderHealth() {
     <div class="health-table-wrap" style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;min-width:800px;">
         <thead style="background:var(--green-dark);color:white;">
-          <tr><th style="padding:10px;font-size:13px;text-align:center;">รูป</th><th style="text-align:left;">ชื่อ-สกุล</th><th>บ้านเลขที่</th><th>เบอร์</th><th>โรคประจำตัว</th><th>สูง</th><th>น้ำหนัก</th><th>BMI</th><th>ความดัน</th><th>น้ำตาล</th><th>จัดการ</th></tr>
+          <tr>
+            <th style="padding:10px;font-size:13px;text-align:center;">รูป</th>
+            <th style="padding:10px;text-align:left;font-size:13px;">ชื่อ-สกุล</th>
+            <th style="padding:10px;font-size:13px;">บ้านเลขที่</th>
+            <th style="padding:10px;font-size:13px;">เบอร์</th>
+            <th style="padding:10px;font-size:13px;">โรคประจำตัว</th>
+            <th style="padding:10px;font-size:13px;">สูง</th>
+            <th style="padding:10px;font-size:13px;">น้ำหนัก</th>
+            <th style="padding:10px;font-size:13px;">BMI</th>
+            <th style="padding:10px;font-size:13px;">ความดัน</th>
+            <th style="padding:10px;font-size:13px;">น้ำตาล</th>
+            <th style="padding:10px;font-size:13px;">จัดการ</th>
+          </tr>
         </thead>
         <tbody id="healthTableBody">${rows}</tbody>
       </table>
@@ -1374,90 +1249,87 @@ function renderHealth() {
 }
 
 function renderHealthLogin() {
-  const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
-  const preId = remembered ? String(remembered.id) : '';
-  const hasPw = preId ? !!localStorage.getItem('asomPw_' + preId) : false;
-  const eyeStyle = `position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:0;line-height:1;color:var(--gray-mid);`;
-  const pwWrap = `position:relative;display:flex;align-items:center;`;
-  const pwInput = (id, ph, onenter='') => `
-    <div style="${pwWrap}">
-      <input type="password" id="${id}" placeholder="${ph}" style="padding-right:36px;width:100%;" ${onenter ? `onkeypress="if(event.key==='Enter')${onenter}"` : ''}>
-      <button type="button" style="${eyeStyle}" onclick="togglePwVis('${id}',this)" title="แสดง/ซ่อนรหัสผ่าน">👁</button>
-    </div>`;
-
   return `
     <p class="section-title">👨‍👩‍👧 รายชื่อ อสม. ที่ดูแลลูกป๊อก</p>
     <p class="section-sub">กรุณาเข้าสู่ระบบด้วยบัญชี อสม. ของคุณ</p>
     <div class="login-box">
       <div style="text-align:center;font-size:48px;margin-bottom:12px;">🏥</div>
       <h2 style="text-align:center;">เข้าสู่ระบบ อสม.</h2>
-      <p style="font-size:13px;color:var(--gray-mid);text-align:center;margin-bottom:22px;">เพื่อจัดการข้อมูลสมาชิกในความดูแลของคุณ</p>
-
+      <p style="font-size:13px;color:var(--gray-mid);text-align:center;margin-bottom:22px;">รหัสผ่านเก็บใน Supabase — ปลอดภัยทุกอุปกรณ์</p>
       <div class="form-group">
         <label>เลือก อสม.</label>
         <select id="loginSelect" onchange="onAsomSelectChange()">
           <option value="">-- เลือกชื่อของคุณ --</option>
-          ${members.map(m => `<option value="${m.id}" ${preId===String(m.id)?'selected':''}>${m.name}</option>`).join('')}
+          ${members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
         </select>
       </div>
 
       <!-- ตั้งรหัสผ่านครั้งแรก -->
-      <div id="setPwPanel" style="display:${preId && !hasPw ? 'block' : 'none'};margin-top:16px;">
+      <div id="setPwPanel" style="display:none;margin-top:16px;">
         <div style="background:#fff8e1;border-left:4px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#7a5500;">
           🔐 กำหนดรหัสผ่านครั้งแรก (อย่างน้อย 6 ตัวอักษร)
         </div>
         <div class="form-group">
           <label>รหัสผ่านใหม่</label>
-          ${pwInput('newPw1','อย่างน้อย 6 ตัวอักษร')}
+          <div style="position:relative;display:flex;align-items:center;">
+            <input type="password" id="newPw1" placeholder="อย่างน้อย 6 ตัวอักษร" style="padding-right:36px;width:100%;">
+            <button type="button" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-mid);" onclick="togglePwVis('newPw1',this)">👁</button>
+          </div>
         </div>
         <div class="form-group" style="margin-top:10px;">
           <label>ยืนยันรหัสผ่าน</label>
-          ${pwInput('newPw2','ใส่รหัสผ่านซ้ำอีกครั้ง','doSetPassword()')}
+          <div style="position:relative;display:flex;align-items:center;">
+            <input type="password" id="newPw2" placeholder="ใส่รหัสผ่านซ้ำ" style="padding-right:36px;width:100%;" onkeypress="if(event.key==='Enter')doSetPassword()">
+            <button type="button" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-mid);" onclick="togglePwVis('newPw2',this)">👁</button>
+          </div>
         </div>
         <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="doSetPassword()">💾 บันทึกรหัสผ่าน</button>
       </div>
 
-      <!-- เข้าสู่ระบบ (มีรหัสผ่านแล้ว) -->
-      <div id="loginPanel" style="display:${preId && hasPw ? 'block' : 'none'};margin-top:16px;">
+      <!-- เข้าสู่ระบบ -->
+      <div id="loginPanel" style="display:none;margin-top:16px;">
         <div class="form-group">
           <label>รหัสผ่าน</label>
-          ${pwInput('loginPw','รหัสผ่าน','doLogin()')}
+          <div style="position:relative;display:flex;align-items:center;">
+            <input type="password" id="loginPw" placeholder="รหัสผ่าน" style="padding-right:36px;width:100%;" onkeypress="if(event.key==='Enter')doLogin()">
+            <button type="button" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-mid);" onclick="togglePwVis('loginPw',this)">👁</button>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-          <input type="checkbox" id="rememberPw" style="width:auto;" ${hasPw && remembered && String(remembered.id)===preId ? 'checked' : ''}>
-          <label for="rememberPw" style="font-size:13px;cursor:pointer;margin:0;">จดจำรหัสผ่าน</label>
+          <input type="checkbox" id="rememberPw" style="width:auto;">
+          <label for="rememberPw" style="font-size:13px;cursor:pointer;margin:0;">จดจำรหัสผ่านในอุปกรณ์นี้</label>
         </div>
         <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
         <p style="text-align:center;margin-top:10px;">
           <button onclick="resetAsomPassword()" style="background:none;border:none;color:var(--gray-mid);font-size:12px;cursor:pointer;text-decoration:underline;">ตั้งรหัสผ่านใหม่</button>
         </p>
       </div>
-    </div>
-    <img src="data:image/gif;base64,R0lGOD" onerror="this.remove();if(document.getElementById('loginSelect')?.value)onAsomSelectChange();" style="display:none">`;
+    </div>`;
 }
 
-function onAsomSelectChange() {
+async function onAsomSelectChange() {
   const id = document.getElementById('loginSelect')?.value || '';
   const setPwPanel = document.getElementById('setPwPanel');
   const loginPanel = document.getElementById('loginPanel');
   if (!setPwPanel || !loginPanel) return;
-  if (!id) {
-    setPwPanel.style.display = 'none';
-    loginPanel.style.display = 'none';
-    return;
-  }
-  const hasPw = !!localStorage.getItem('asomPw_' + id);
-  setPwPanel.style.display = hasPw ? 'none' : 'block';
-  loginPanel.style.display  = hasPw ? 'block' : 'none';
-  // Auto-fill remembered password
-  if (hasPw) {
-    const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
-    if (remembered && String(remembered.id) === String(id) && remembered.pw) {
+  if (!id) { setPwPanel.style.display='none'; loginPanel.style.display='none'; return; }
+
+  setPwPanel.style.display='none'; loginPanel.style.display='none';
+  showToast('⏳ ตรวจสอบ...');
+
+  const pw = await dbGetPassword(id);
+  if (pw) {
+    loginPanel.style.display = 'block';
+    // Auto-fill remembered
+    const rem = JSON.parse(localStorage.getItem('asomRemember') || 'null');
+    if (rem && String(rem.id) === String(id) && rem.pw) {
       const pwEl = document.getElementById('loginPw');
-      if (pwEl) pwEl.value = remembered.pw;
+      if (pwEl) pwEl.value = rem.pw;
       const remEl = document.getElementById('rememberPw');
       if (remEl) remEl.checked = true;
     }
+  } else {
+    setPwPanel.style.display = 'block';
   }
 }
 
@@ -1469,33 +1341,46 @@ function togglePwVis(inputId, btn) {
   if (btn) btn.textContent = show ? '🙈' : '👁';
 }
 
-function doSetPassword() {
+async function doSetPassword() {
   const id = document.getElementById('loginSelect')?.value || '';
   const pw1 = document.getElementById('newPw1')?.value || '';
   const pw2 = document.getElementById('newPw2')?.value || '';
   if (!id) { showToast('❌ กรุณาเลือก อสม. ก่อน'); return; }
   if (pw1.length < 6) { showToast('❌ รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
-  if (pw1 !== pw2) { showToast('❌ รหัสผ่านไม่ตรงกัน กรุณาลองใหม่'); return; }
-  localStorage.setItem('asomPw_' + id, pw1);
-  showToast('✅ ตั้งรหัสผ่านแล้ว กรุณาเข้าสู่ระบบ');
-  // Switch to login panel without full re-render
-  const setPwPanel = document.getElementById('setPwPanel');
-  const loginPanel = document.getElementById('loginPanel');
-  if (setPwPanel) setPwPanel.style.display = 'none';
-  if (loginPanel) loginPanel.style.display = 'block';
-  const pwEl = document.getElementById('loginPw');
-  if (pwEl) { pwEl.value = ''; pwEl.focus(); }
+  if (pw1 !== pw2) { showToast('❌ รหัสผ่านไม่ตรงกัน'); return; }
+
+  showToast('⏳ กำลังบันทึก...');
+  const ok = await dbSetPassword(Number(id), pw1);
+  if (ok) {
+    showToast('✅ ตั้งรหัสผ่านแล้ว กรุณาเข้าสู่ระบบ');
+    const setPwPanel = document.getElementById('setPwPanel');
+    const loginPanel = document.getElementById('loginPanel');
+    if (setPwPanel) setPwPanel.style.display = 'none';
+    if (loginPanel) loginPanel.style.display = 'block';
+    const pwEl = document.getElementById('loginPw');
+    if (pwEl) { pwEl.value = ''; pwEl.focus(); }
+  }
 }
 
-function resetAsomPassword() {
+async function resetAsomPassword() {
   const id = document.getElementById('loginSelect')?.value || '';
   if (!id) return;
   const m = members.find(x => String(x.id) === String(id));
-  if (!confirm(`ตั้งรหัสผ่านใหม่สำหรับ "${m?.name || id}" ?\n(รหัสเก่าจะถูกลบ)`)) return;
-  localStorage.removeItem('asomPw_' + id);
-  localStorage.removeItem('asomRemember');
-  onAsomSelectChange();
-  showToast('🔄 ลบรหัสผ่านเก่าแล้ว กรุณาตั้งรหัสผ่านใหม่');
+  if (!confirm(`ตั้งรหัสผ่านใหม่สำหรับ "${m?.name || id}" ?\n(รหัสเก่าจะถูกลบออกจาก Supabase)`)) return;
+  showToast('⏳ กำลังลบรหัสผ่านเก่า...');
+  const { error } = await db.from('asom_passwords').delete().eq('asom_id', Number(id));
+  if (!error) {
+    localStorage.removeItem('asomRemember');
+    showToast('🔄 ลบรหัสผ่านเก่าแล้ว กรุณาตั้งรหัสผ่านใหม่');
+    const setPwPanel = document.getElementById('setPwPanel');
+    const loginPanel = document.getElementById('loginPanel');
+    if (setPwPanel) setPwPanel.style.display = 'block';
+    if (loginPanel) loginPanel.style.display = 'none';
+    const p1 = document.getElementById('newPw1'); if (p1) p1.value = '';
+    const p2 = document.getElementById('newPw2'); if (p2) p2.value = '';
+  } else {
+    showToast('❌ ไม่สามารถลบรหัสผ่านได้');
+  }
 }
 
 async function doLogin() {
@@ -1504,103 +1389,29 @@ async function doLogin() {
   if (!id) { showToast('❌ กรุณาเลือก อสม. ก่อน'); return; }
   if (!pw)  { showToast('❌ กรุณาใส่รหัสผ่าน'); return; }
 
-  const localPw = localStorage.getItem('asomPw_' + id);
+  showToast('⏳ กำลังตรวจสอบ...');
+  const dbPw = await dbGetPassword(Number(id));
 
-  // ถ้ามีรหัสในเครื่อง — ตรวจสอบจากเครื่องก่อนเลย
-  if (localPw) {
-    if (pw !== localPw) { showToast('❌ รหัสผ่านไม่ถูกต้อง'); return; }
-    loggedInAsom = members.find(m => String(m.id) === String(id));
-    if (document.getElementById('rememberPw')?.checked) {
-      localStorage.setItem('asomRemember', JSON.stringify({ id, pw }));
-    } else {
-      localStorage.removeItem('asomRemember');
-    }
-    // โหลดจาก localStorage ก่อน (offline-first)
-    const _lh = loadHealthLocal(id);
-    if (_lh.length > 0) {
-      healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
-      healthMembers.push(..._lh);
-    }
-    render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
-    // รีเฟรชจาก API แบบ non-blocking
-    try {
-      const healthRes = await apiGet('getHealth', { asomId: id });
-      if (healthRes.success && healthRes.data.length > 0) {
-        const loaded = healthRes.data.map(h => ({
-          id: h['id'], asomId: h['รหัสอสม'],
-          firstName: h['ชื่อ'], lastName: h['นามสกุล'],
-          address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
-          edu: h['การศึกษา'], phone: h['เบอร์โทร'],
-          disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
-          weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
-          bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
-          photo: h['รูปภาพ(URL)'] || ''
-        }));
-        healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
-        healthMembers.push(...loaded);
-        saveHealthLocal(id);
-        if (currentPage === 'health') render();
-      }
-    } catch(e) {}
-    return;
+  if (!dbPw) { showToast('❌ ยังไม่มีรหัสผ่าน กรุณาตั้งรหัสผ่านก่อน'); return; }
+  if (pw !== dbPw) { showToast('❌ รหัสผ่านไม่ถูกต้อง'); return; }
+
+  loggedInAsom = members.find(m => String(m.id) === String(id)) || null;
+
+  if (document.getElementById('rememberPw')?.checked) {
+    localStorage.setItem('asomRemember', JSON.stringify({ id, pw }));
+  } else {
+    localStorage.removeItem('asomRemember');
   }
 
-  // ไม่มีรหัสในเครื่อง — ลอง API
-  try {
-    const res = await apiPost({ action: 'login', data: { asomId: id, password: pw } });
-    if (res.success) {
-      loggedInAsom = members.find(m => String(m.id) === String(id));
-      if (document.getElementById('rememberPw')?.checked) {
-        localStorage.setItem('asomRemember', JSON.stringify({ id, pw }));
-      } else {
-        localStorage.removeItem('asomRemember');
-      }
-      // โหลดจาก localStorage ก่อน แสดงผลทันที
-      const _lh2 = loadHealthLocal(id);
-      if (_lh2.length > 0) {
-        healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
-        healthMembers.push(..._lh2);
-      }
-      render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
-      try {
-        const healthRes = await apiGet('getHealth', { asomId: id });
-        if (healthRes.success && healthRes.data.length > 0) {
-          const loaded = healthRes.data.map(h => ({
-            id: h['id'], asomId: h['รหัสอสม'],
-            firstName: h['ชื่อ'], lastName: h['นามสกุล'],
-            address: h['บ้านเลขที่'], idCard: h['เลขบัตรปชช'],
-            edu: h['การศึกษา'], phone: h['เบอร์โทร'],
-            disease: h['โรคประจำตัว'], height: h['ส่วนสูง(ซม)'],
-            weight: h['น้ำหนัก(กก)'], bmi: h['BMI'],
-            bp: h['ความดัน'], bloodSugar: h['น้ำตาลในเลือด'],
-            photo: h['รูปภาพ(URL)'] || ''
-          }));
-          healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
-          healthMembers.push(...loaded);
-          saveHealthLocal(id);
-          if (currentPage === 'health') render();
-        }
-      } catch(e) {}
-    } else { showToast('❌ รหัสผ่านไม่ถูกต้อง'); }
-  } catch(err) {
-    // Fallback: รหัสเริ่มต้น asom + หมายเลข
-    const expectedPw = 'asom' + id;
-    if (pw === expectedPw || pw === 'asom1234') {
-      loggedInAsom = members.find(m => String(m.id) === String(id));
-      const _lhFb = loadHealthLocal(id);
-      if (_lhFb.length > 0) {
-        healthMembers = healthMembers.filter(h => String(h.asomId) !== String(id));
-        healthMembers.push(..._lhFb);
-      }
-      render(); showToast('✅ เข้าสู่ระบบสำเร็จ');
-    } else {
-      showToast('❌ รหัสผ่านไม่ถูกต้อง');
-    }
-  }
+  showToast('⏳ กำลังโหลดข้อมูลสมาชิก...');
+  healthMembers = await dbGetHealth(Number(id));
+  showToast('✅ เข้าสู่ระบบสำเร็จ');
+  render();
 }
 
 function logoutHealth() {
   loggedInAsom = null;
+  healthMembers = [];
   localStorage.removeItem('asomRemember');
   render();
 }
@@ -1616,9 +1427,9 @@ function openAddHealthModal() {
 }
 
 function editHealthMember(id) {
-  const h = healthMembers.find(x => x.id === id);
+  const h = healthMembers.find(x => x.id === id || String(x.id) === String(id));
   if (!h) return;
-  document.getElementById('editHealthId').value = id;
+  document.getElementById('editHealthId').value = h.id;
   document.getElementById('hFirstName').value = h.firstName||'';
   document.getElementById('hLastName').value = h.lastName||'';
   document.getElementById('hAddress').value = h.address||'';
@@ -1631,7 +1442,12 @@ function editHealthMember(id) {
   document.getElementById('hBMI').value = h.bmi||'';
   document.getElementById('hBP').value = h.bp||'';
   document.getElementById('hBloodSugar').value = h.bloodSugar||'';
-  if (h.photo) { document.getElementById('hPhotoPreview').src = h.photo; document.getElementById('hPhotoPreview').style.display = 'block'; }
+  if (h.photo) {
+    document.getElementById('hPhotoPreview').src = h.photo;
+    document.getElementById('hPhotoPreview').style.display = 'block';
+  } else {
+    document.getElementById('hPhotoPreview').style.display = 'none';
+  }
   openModal('addHealthModal');
 }
 
@@ -1653,50 +1469,52 @@ function previewHealthPhoto(e) {
 
 async function saveHealthMember() {
   const editId = document.getElementById('editHealthId').value;
+  const photoSrc = document.getElementById('hPhotoPreview').src || '';
   const data = {
-    id: editId || undefined,
     asomId: loggedInAsom?.id,
-    firstName: document.getElementById('hFirstName').value,
-    lastName: document.getElementById('hLastName').value,
-    address: document.getElementById('hAddress').value,
-    idCard: document.getElementById('hIdCard').value,
+    firstName: document.getElementById('hFirstName').value.trim(),
+    lastName: document.getElementById('hLastName').value.trim(),
+    address: document.getElementById('hAddress').value.trim(),
+    idCard: document.getElementById('hIdCard').value.trim(),
     edu: document.getElementById('hEdu').value,
-    phone: document.getElementById('hPhone').value,
-    disease: document.getElementById('hDisease').value,
-    height: document.getElementById('hHeight').value,
-    weight: document.getElementById('hWeight').value,
-    bmi: document.getElementById('hBMI').value,
-    bp: document.getElementById('hBP').value,
-    bloodSugar: document.getElementById('hBloodSugar').value,
-    photoUrl: document.getElementById('hPhotoPreview').src || ''
+    phone: document.getElementById('hPhone').value.trim(),
+    disease: document.getElementById('hDisease').value.trim(),
+    height: document.getElementById('hHeight').value || null,
+    weight: document.getElementById('hWeight').value || null,
+    bmi: document.getElementById('hBMI').value || null,
+    bp: document.getElementById('hBP').value.trim(),
+    bloodSugar: document.getElementById('hBloodSugar').value || null,
+    photo: photoSrc.startsWith('data:') ? photoSrc : (photoSrc !== window.location.href ? photoSrc : '')
   };
   if (!data.firstName) { alert('กรุณาใส่ชื่อ'); return; }
 
+  showToast('⏳ กำลังบันทึก...');
+
   if (editId) {
-    const i = healthMembers.findIndex(x => x.id === editId);
-    if (i >= 0) healthMembers[i] = { ...data, id: editId, photo: data.photoUrl };
-    showToast('✅ แก้ไขข้อมูลสมาชิกแล้ว');
-    try { await apiPost({ action: 'editHealth', data: { ...data, id: editId } }); } catch(e) {}
+    const ok = await dbUpdateHealth(Number(editId), data);
+    if (ok) {
+      const i = healthMembers.findIndex(x => String(x.id) === String(editId));
+      if (i >= 0) healthMembers[i] = { ...data, id: Number(editId) };
+      showToast('✅ แก้ไขข้อมูลสมาชิกใน Supabase แล้ว');
+    }
   } else {
-    const newId = 'h_' + Date.now();
-    healthMembers.push({ ...data, id: newId, photo: data.photoUrl });
-    showToast('✅ เพิ่มสมาชิกแล้ว');
-    try {
-      const res = await apiPost({ action: 'addHealth', data });
-      if (res.success) { const hm = healthMembers.find(x => x.id === newId); if (hm) hm.id = res.id; }
-    } catch(e) {}
+    const newId = await dbAddHealth(data);
+    if (newId) {
+      healthMembers.push({ ...data, id: newId });
+      showToast('✅ เพิ่มสมาชิกลง Supabase แล้ว');
+    }
   }
-  // บันทึกลง localStorage ทุกครั้งที่มีการเปลี่ยนแปลง
-  saveHealthLocal(loggedInAsom?.id);
   closeModal('addHealthModal'); render();
 }
 
 async function deleteHealthMember(id) {
   if (!confirm('ยืนยันการลบสมาชิก?')) return;
-  healthMembers = healthMembers.filter(h => h.id !== id);
-  saveHealthLocal(loggedInAsom?.id);
-  render(); showToast('🗑️ ลบสมาชิกแล้ว');
-  try { await apiPost({ action: 'deleteHealth', id }); } catch(e) {}
+  const ok = await dbDeleteHealth(id);
+  if (ok) {
+    healthMembers = healthMembers.filter(h => h.id !== id && String(h.id) !== String(id));
+    showToast('🗑️ ลบสมาชิกแล้ว');
+    render();
+  }
 }
 
 function filterHealth() {
@@ -1727,7 +1545,7 @@ function filterHealth() {
     const ph = h.photo
       ? `<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);" onerror="this.outerHTML='<span style=font-size:26px>👤</span>'">`
       : `<span style="font-size:26px;">👤</span>`;
-    return `<tr><td style="text-align:center;">${ph}</td><td>${h.firstName} ${h.lastName}</td><td>${h.address||'-'}</td><td>${h.phone||'-'}</td><td>${h.disease||'-'}</td><td>${h.height||'-'}</td><td>${h.weight||'-'}</td><td><span class="bmi-badge ${bc}">${h.bmi||'-'} ${bl}</span></td><td>${h.bp||'-'}</td><td>${h.bloodSugar||'-'}</td><td><button class="btn-edit" onclick="editHealthMember('${h.id}')">แก้ไข</button><button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember('${h.id}')">ลบ</button></td></tr>`;
+    return `<tr><td style="text-align:center;padding:8px;">${ph}</td><td style="padding:8px;">${h.firstName} ${h.lastName}</td><td style="padding:8px;">${h.address||'-'}</td><td style="padding:8px;">${h.phone||'-'}</td><td style="padding:8px;">${h.disease||'-'}</td><td style="padding:8px;">${h.height||'-'}</td><td style="padding:8px;">${h.weight||'-'}</td><td style="padding:8px;"><span class="bmi-badge ${bc}">${h.bmi||'-'} ${bl}</span></td><td style="padding:8px;">${h.bp||'-'}</td><td style="padding:8px;">${h.bloodSugar||'-'}</td><td style="padding:8px;"><button class="btn-edit" onclick="editHealthMember(${h.id})">แก้ไข</button><button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember(${h.id})">ลบ</button></td></tr>`;
   }).join('') || '<tr><td colspan="11" class="text-center" style="color:var(--gray-mid);padding:20px;">ไม่พบข้อมูล</td></tr>';
 }
 
@@ -1738,17 +1556,15 @@ function renderSummary() {
   const income = finances.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount),0);
   const expense = finances.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount),0);
   const balance = income - expense;
-
   const categoryData = {};
   finances.filter(f=>f.type==='expense').forEach(f => { categoryData[f.category]=(categoryData[f.category]||0)+Number(f.amount); });
   const catRows = Object.entries(categoryData).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef2ef;font-size:13px;"><span>${k}</span><span style="font-weight:600;color:#c62828;">${v.toLocaleString('th')} ฿</span></div>`).join('');
-
-  const diseasedCount = healthMembers.filter(h => h.disease && h.disease !== 'ไม่มี' && h.disease.trim() !== '').length;
-  const overBMICount = healthMembers.filter(h => parseFloat(h.bmi) >= 25).length;
+  const diseasedCount = healthMembers.filter(h=>h.disease&&h.disease!=='ไม่มี'&&h.disease.trim()!=='').length;
+  const overBMICount = healthMembers.filter(h=>parseFloat(h.bmi)>=25).length;
 
   return `
     <p class="section-title">📊 สรุปข้อมูลกลุ่ม อสม.</p>
-    <p class="section-sub">ข้อมูลรวมของกลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน</p>
+    <p class="section-sub">ข้อมูลรวมของกลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน — ข้อมูลจาก Supabase</p>
     <div class="summary-grid">
       <div class="sum-card"><h3>จำนวน อสม.</h3><div class="sum-num">${members.length} <span class="sum-unit">คน</span></div></div>
       <div class="sum-card"><h3>สมาชิก/ลูกป๊อก</h3><div class="sum-num">${healthMembers.length} <span class="sum-unit">คน</span></div></div>
@@ -1758,12 +1574,12 @@ function renderSummary() {
       <div class="sum-card"><h3>คงเหลือ</h3><div class="sum-num" style="font-size:20px;color:${balance>=0?'var(--green-dark)':'#c62828'}">${balance.toLocaleString('th')} <span class="sum-unit">฿</span></div></div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:4px;">
-      <div class="fin-card" style="border-radius:12px;box-shadow:var(--shadow);">
+      <div class="fin-card" style="border-radius:12px;box-shadow:var(--shadow);text-align:left;">
         <h3 style="font-family:Kanit,sans-serif;font-size:15px;color:var(--green-dark);margin-bottom:12px;">💊 ข้อมูลสุขภาพสมาชิก</h3>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef2ef;font-size:13px;"><span>มีโรคประจำตัว</span><span style="font-weight:700;color:#c62828;">${diseasedCount} คน</span></div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span>BMI เกินเกณฑ์</span><span style="font-weight:700;color:#e65100;">${overBMICount} คน</span></div>
       </div>
-      <div class="fin-card" style="border-radius:12px;box-shadow:var(--shadow);">
+      <div class="fin-card" style="border-radius:12px;box-shadow:var(--shadow);text-align:left;">
         <h3 style="font-family:Kanit,sans-serif;font-size:15px;color:var(--green-dark);margin-bottom:12px;">💸 รายจ่ายตามหมวดหมู่</h3>
         ${catRows || '<p style="color:var(--gray-mid);font-size:13px;">ยังไม่มีข้อมูล</p>'}
       </div>
@@ -1818,7 +1634,7 @@ function sendContact() {
 }
 
 // ============================================================
-// MARQUEE ADMIN
+// MARQUEE
 // ============================================================
 function prepareMarquee() {
   document.getElementById('marqueeInput').value = document.getElementById('marqueeText').textContent.trim();
@@ -1827,15 +1643,10 @@ function prepareMarquee() {
 async function saveMarquee() {
   const txt = document.getElementById('marqueeInput').value;
   document.getElementById('marqueeText').textContent = txt;
-  try { await apiPost({ action: 'updateSetting', key: 'marquee_text', value: txt }); } catch(e) {}
+  await dbUpdateSetting('marquee_text', txt);
   closeModal('marqueeEditModal');
-  showToast('✅ อัปเดตประกาศแล้ว');
+  showToast('✅ อัปเดตประกาศใน Supabase แล้ว');
 }
-
-// ============================================================
-// BIND EVENTS (after render)
-// ============================================================
-function bindEvents() {}
 
 // ============================================================
 // START
