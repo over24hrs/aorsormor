@@ -1659,6 +1659,12 @@ initApp();
   
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log("Supabase ของ อสม. เชื่อมต่อสำเร็จแล้ว!");
+
+  // ดักเอาไว้ว่าถ้าเกิดระบบเดิมค้าง ให้ปิดตัวโหลดข้อมูลแสดงหน้าเว็บปกติก่อน
+  setTimeout(() => {
+    const loadingEl = document.getElementById('loading') || document.querySelector('.loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+  }, 1000);
 </script>
 </script>
 </body>
