@@ -443,19 +443,34 @@ async function dbGetMembers() {
   const { data, error } = await db.from('members').select('*').order('id');
   if (error) { dbErr('โหลดสมาชิก', error); return []; }
   return data.map(m => ({
-    id: m.id, name: m.name || '', role: m.role || '',
-    phone: m.phone || '', photo: m.photo_url || '', village: m.village || '9'
+    id: m.id,
+    name: (m.name || '') + (m.lastname ? ' ' + m.lastname : ''),
+    role: m.role || '',
+    phone: m.phone || '',
+    photo: m.photo_url || m.image_url || '',
+    village: m.village || '9'
   }));
 }
 
 async function dbUpdateMember(id, { name, role, phone }) {
-  const { error } = await db.from('members').update({ name, role, phone }).eq('id', id);
+  const parts = name.trim().split(' ');
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+  const { error } = await db.from('members').update({ 
+    name: firstName, 
+    lastname: lastName, 
+    role, 
+    phone 
+  }).eq('id', id);
   if (error) { dbErr('แก้ไขสมาชิก', error); return false; }
   return true;
 }
 
 async function dbUpdateMemberPhoto(id, photoUrl) {
-  const { error } = await db.from('members').update({ photo_url: photoUrl }).eq('id', id);
+  const { error } = await db.from('members').update({ 
+    photo_url: photoUrl, 
+    image_url: photoUrl 
+  }).eq('id', id);
   if (error) { dbErr('อัปเดตรูป', error); return false; }
   return true;
 }
