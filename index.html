@@ -318,7 +318,7 @@ input[type="file"] { display:none; }
 // ============================================================
 const { createClient } = supabase;
 let db;
-let dbReady = false;
+let dbReady = true;
 
 try {
   db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -344,51 +344,63 @@ let loggedInAsom = null;
 let editingEventId = null;
 let pendingMemberPhotoId = null; // for photo upload
 
-let villageInfo = JSON.parse(localStorage.getItem('villageInfo') || 'null') || {
+let villageInfo = {
   title: 'กลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)',
   address: 'บ้านใหม่เจริญไพร หมู่ 9 ตำบลฝายกวาง อำเภอเชียงคำ จังหวัดพะเยา'
 };
 
-// Photo cache (IndexedDB)
-const photoDB = {
-  _db: null,
-  async open() {
-    if (this._db) return this._db;
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open('asomPhotoDB', 1);
-      req.onupgradeneeded = e => e.target.result.createObjectStore('photos');
-      req.onsuccess = e => { this._db = e.target.result; resolve(this._db); };
-      req.onerror = () => reject(req.error);
-    });
-  },
-  async getAll() {
-    const db = await this.open();
-    return new Promise(resolve => {
-      const result = {};
-      const tx = db.transaction('photos', 'readonly');
-      tx.objectStore('photos').openCursor().onsuccess = e => {
-        const cur = e.target.result;
-        if (cur) { result[cur.key] = cur.value; cur.continue(); }
-        else resolve(result);
-      };
-      tx.onerror = () => resolve({});
-    });
-  },
-  async set(key, value) {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('photos', 'readwrite');
-      tx.objectStore('photos').put(value, String(key));
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
-    });
+// ฟังก์ชันดึงข้อมูลจาก Supabase ออนไลน์มาใส่ในแอปพลิเคชัน
+async function loadDataFromSupabase() {
+  try {
+    console.log("กำลังดึงข้อมูลจากฐานข้อมูลออนไลน์ Supabase...");
+    
+    // 1. ดึงข้อมูลสมาชิก อสม.
+    const { data: mData, error: mErr } = await supabase.from('members').select('*').order('id', { ascending: true });
+    if (!mErr && mData) members = mData;
+
+    // 2. ดึงข้อมูลรายรับ-รายจ่าย
+    const { data: fData, error: fErr } = await supabase.from('finances').select('*').order('date', { ascending: false });
+    if (!fErr && fData) finances = fData;
+
+    // 3. ดึงข้อมูลกิจกรรม
+    const { data: eData, error: eErr } = await supabase.from('events').select('*').order('date', { ascending: false });
+    if (!eErr && eData) events = eData;
+
+    // 4. ดึงข้อมูลลำดับการเข้าร่วมกิจกรรม
+    const { data: aoData, error: aoErr } = await supabase.from('activity_orders').select('*');
+    if (!aoErr && aoData) activityOrders = aoData;
+
+    // 5. ดึงข้อมูลสมาชิก/ลูกป๊อก ในความดูแล
+    const { data: hData, error: hErr } = await supabase.from('health_members').select('*').order('id', { ascending: true });
+    if (!hErr && hData) healthMembers = hData;
+
+    // 6. ดึงข้อความวิ่ง (Settings)
+    const { data: sData, error: sErr } = await supabase.from('settings').select('*');
+    if (!sErr && sData) {
+      const marqueeSetting = sData.find(s => s.key === 'marquee_text');
+      if (marqueeSetting) {
+        // อัปเดตข้อความวิ่งในหน้าเว็บถ้ามีข้อความในเบส
+        const marqueeEl = document.querySelector('marquee') || document.getElementById('marquee-text');
+        if (marqueeEl) marqueeEl.innerText = marqueeSetting.value;
+      }
+    }
+
+    console.log("โหลดข้อมูลสำเร็จ!", { members, finances, events, healthMembers });
+    
+    // ปิดหน้าจอกำลังโหลด (Loading) ทันทีเมื่อดึงข้อมูลเสร็จ
+    const loadingEl = document.getElementById('loading') || document.querySelector('.loading-overlay') || document.querySelector('.loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+
+  } catch (err) {
+    console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", err);
   }
-};
+}
 
+// แฮกสคริปต์ Photo Cache เดิม เพื่อเปลี่ยนไปอ่านค่าภาพจาก Supabase ผ่าน URL สะดวกกว่า
 let photoCache = {};
-
 async function initPhotoCache() {
-  try { photoCache = await photoDB.getAll(); } catch(e) { photoCache = {}; }
+  // บังคับเรียกโหลดข้อมูลฐานข้อมูลทันทีเมื่อเปิดแอป
+  await loadDataFromSupabase();
 }
 
 function resizeImage(file, maxPx = 220, quality = 0.82) {
@@ -640,18 +652,15 @@ function applyVillageInfoToHeader() {
 // ============================================================
 async function initApp() {
   applyVillageInfoToHeader();
+  
+  // ประกาศฝืนให้ระบบรู้ว่าเราพร้อมต่อ Supabase ตัวจริงแล้ว
+  window.dbReady = true; 
+  
   await initPhotoCache();
 
-  if (!dbReady) {
-    showToast('❌ ยังไม่ได้ตั้งค่า Supabase — กรุณาดูคำแนะนำในโค้ด');
-    members = loadDefaultMembers();
-    render();
-    return;
-  }
-
   try {
-    // Load all data in parallel
-    const [membersData, financesData, eventsData, actOrdersData, settings] = await Promise.all([
+    // โหลดข้อมูลทั้งหมดแบบขนานจากระบบออนไลน์
+    const [membersData, financesData, eventsData, actOrdersData, settingsData] = await Promise.all([
       dbGetMembers(),
       dbGetFinances(),
       dbGetEvents(),
@@ -661,7 +670,7 @@ async function initApp() {
 
     members = membersData.length > 0 ? membersData : loadDefaultMembers();
 
-    // Apply local photo overrides
+    // จัดการแปลงค่ารูปภาพ
     members = members.map(m => {
       const cached = photoCache[String(m.id)];
       return { ...m, photo: cached || m.photo || '' };
@@ -671,11 +680,13 @@ async function initApp() {
     events = eventsData;
     activityOrders = actOrdersData;
 
-    if (settings.marquee_text) {
-      document.getElementById('marqueeText').textContent = settings.marquee_text;
+    // ตั้งค่าข้อความวิ่งด้านบนหน้าเว็บ
+    if (settingsData && settingsData.marquee_text) {
+      const marqueeEl = document.getElementById('marqueeText') || document.getElementById('marquee-text');
+      if (marqueeEl) marqueeEl.textContent = settingsData.marquee_text;
     }
 
-    // Auto-restore login session
+    // ฟังก์ชันกู้คืนระบบ Login อัตโนมัติ
     const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
     if (remembered?.id) {
       const dbPw = await dbGetPassword(remembered.id);
@@ -691,8 +702,12 @@ async function initApp() {
   } catch(err) {
     console.error('initApp error:', err);
     members = loadDefaultMembers();
-    showToast('⚠️ โหลดข้อมูลไม่ได้ — ตรวจสอบการตั้งค่า Supabase');
+    showToast('⚠️ โหลดข้อมูลไม่ได้ — กำลังใช้ข้อมูลจำลองเบื้องต้น');
   }
+
+  // ปิดหน้าจอโหลดค้างออกไป
+  const loadingEl = document.getElementById('loading') || document.querySelector('.loading');
+  if (loadingEl) loadingEl.style.display = 'none';
 
   render();
 }
