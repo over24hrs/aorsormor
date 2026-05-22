@@ -316,7 +316,7 @@ input[type="file"] { display:none; }
 // ============================================================
 // SUPABASE CLIENT
 // ============================================================
-const { createClient } = supabase;
+const { createClient } = window.supabase;
 let db;
 let dbReady = true;
 
@@ -355,7 +355,7 @@ async function loadDataFromSupabase() {
     console.log("กำลังดึงข้อมูลจากฐานข้อมูลออนไลน์ Supabase...");
     
     // 1. ดึงข้อมูลสมาชิก อสม.
-    const { data: mData, error: mErr } = await supabase.from('members').select('*').order('id', { ascending: true });
+    const { data: mData, error: mErr } = await db.from('members').select('*').order('id', { ascending: true });
     if (!mErr && mData) members = mData;
 
     // 2. ดึงข้อมูลรายรับ-รายจ่าย
