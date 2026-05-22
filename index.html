@@ -1841,6 +1841,14 @@ function bindEvents() {}
 // START
 // ============================================================
 initApp();
+  <script src="https://jsdelivr.net"></script>
+<script>
+  const SUPABASE_URL = 'https://supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56ZGJ0cWR4Z2tqaXF5d3JueXNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzU4NDIsImV4cCI6MjA5NDk1MTg0Mn0.SFve344CYSexUqx9EyU4r7MwPr2eMH4c3Q0zh9Vf-vc'; 
+  
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log("Supabase ของ อสม. เชื่อมต่อสำเร็จแล้ว!");
+</script>
 </script>
 </body>
 </html>
