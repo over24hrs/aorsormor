@@ -13,8 +13,8 @@
   3. วางลงในตัวแปร SUPABASE_URL และ SUPABASE_KEY ด้านล่าง
 ============================================================ -->
 <script>
-  const SUPABASE_URL = 'https://xxxxxxxxxxxxxxxxxxxx.supabase.co'; // ← เปลี่ยนตรงนี้
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxx'; // ← เปลี่ยนตรงนี้
+  const SUPABASE_URL = 'https://nzdbtqdxgkjiqywrnysh.supabase.co'; // ← Project URL จริง
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56ZGJ0cWR4Z2tqaXF5d3JueXNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzU4NDIsImV4cCI6MjA5NDk1MTg0Mn0.SFve344CYSexUqx9EyU4r7MwPr2eMH4c3Q0zh9Vf-vc'; // ← anon key จริง
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1667,20 +1667,6 @@ async function saveMarquee() {
 // START
 // ============================================================
 initApp();
-  <script src="https://jsdelivr.net"></script>
-<script>
-  const SUPABASE_URL = 'https://supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56ZGJ0cWR4Z2tqaXF5d3JueXNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzU4NDIsImV4cCI6MjA5NDk1MTg0Mn0.SFve344CYSexUqx9EyU4r7MwPr2eMH4c3Q0zh9Vf-vc'; 
-  
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  console.log("Supabase ของ อสม. เชื่อมต่อสำเร็จแล้ว!");
-
-  // ดักเอาไว้ว่าถ้าเกิดระบบเดิมค้าง ให้ปิดตัวโหลดข้อมูลแสดงหน้าเว็บปกติก่อน
-  setTimeout(() => {
-    const loadingEl = document.getElementById('loading') || document.querySelector('.loading');
-    if (loadingEl) loadingEl.style.display = 'none';
-  }, 1000);
-</script>
 </script>
 </body>
 </html>
