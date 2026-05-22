@@ -310,7 +310,7 @@ input[type="file"] { display:none; }
 <div class="modal-overlay" id="addHealthModal">
   <div class="modal" style="max-width:640px;">
     <button class="modal-close" onclick="closeModal('addHealthModal')">×</button>
-    <h2>👤 เพิ่ม/แก้ไขข้อมูลสมาชิก</h2>
+    <h2>👤 เพิ่ม/แก้ไขข้อมูลสมาชิกที่ดูแล</h2>
     <input type="hidden" id="editHealthId">
 
     <!-- ข้อมูลพื้นฐาน -->
@@ -334,15 +334,22 @@ input[type="file"] { display:none; }
           </select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>วันเดือนปีเกิด (ค.ศ.)</label>
-          <input type="date" id="hBirthDate" onchange="calcAgeFromBirth()" max="">
-          <div id="hAgeDisplay" style="margin-top:6px;"></div>
+      <div class="form-group">
+        <label>วันเดือนปีเกิด (พ.ศ.)</label>
+        <div style="display:grid;grid-template-columns:1fr 2fr 1.5fr;gap:8px;align-items:center;">
+          <input type="number" id="hBirthDay" placeholder="วัน" min="1" max="31" oninput="calcAgeFromBirth()" style="text-align:center;">
+          <select id="hBirthMonth" onchange="calcAgeFromBirth()">
+            <option value="">-- เดือน --</option>
+            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
+            <option value="3">มีนาคม</option><option value="4">เมษายน</option>
+            <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+            <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
+            <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
+            <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+          </select>
+          <input type="number" id="hBirthYear" placeholder="ปี พ.ศ." min="2400" max="2580" oninput="calcAgeFromBirth()" style="text-align:center;">
         </div>
-        <div class="form-group"><label>ผู้ดูแล/อสม. ประจำ</label>
-          <input id="hCaretaker" placeholder="ชื่อ อสม. ที่ดูแล">
-        </div>
+        <div id="hAgeDisplay" style="margin-top:6px;"></div>
       </div>
     </div>
 
@@ -372,24 +379,27 @@ input[type="file"] { display:none; }
           </div>
         </div>
       </div>
-      <!-- ความดัน 3 ครั้ง -->
-      <div style="background:var(--green-pale);border-radius:8px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--green-light);">
-        <div style="font-size:13px;font-weight:600;color:var(--green-dark);margin-bottom:10px;">💓 ความดันโลหิต (รูปแบบ 120/80)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <!-- ความดันโลหิต SYS / DIA / PUL -->
+      <div style="background:var(--green-pale);border-radius:8px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--green-light);">
+        <div style="font-size:13px;font-weight:600;color:var(--green-dark);margin-bottom:12px;">💓 วัดความดันโลหิต</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
           <div class="form-group" style="margin:0;">
-            <label style="font-size:11px;">ครั้งที่ 1</label>
-            <input id="hBP1" placeholder="120/80" pattern="\d+/\d+" oninput="validateBP(this)">
+            <label style="font-size:12px;font-weight:600;color:#c62828;">SYS (ค่าตัวบน)</label>
+            <input type="number" id="hBPSys" placeholder="เช่น 120" min="40" max="300" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#ef9a9a;">
+            <div style="font-size:10px;color:var(--gray-mid);margin-top:3px;">แรงดันขณะหัวใจบีบตัว (mmHg)</div>
           </div>
           <div class="form-group" style="margin:0;">
-            <label style="font-size:11px;">ครั้งที่ 2</label>
-            <input id="hBP2" placeholder="120/80" pattern="\d+/\d+" oninput="validateBP(this)">
+            <label style="font-size:12px;font-weight:600;color:#1565c0;">DIA (ค่าตัวล่าง)</label>
+            <input type="number" id="hBPDia" placeholder="เช่น 80" min="20" max="200" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#90caf9;">
+            <div style="font-size:10px;color:var(--gray-mid);margin-top:3px;">แรงดันขณะหัวใจคลายตัว (mmHg)</div>
           </div>
           <div class="form-group" style="margin:0;">
-            <label style="font-size:11px;">ครั้งที่ 3</label>
-            <input id="hBP3" placeholder="120/80" pattern="\d+/\d+" oninput="validateBP(this)">
+            <label style="font-size:12px;font-weight:600;color:#6a1b9a;">PUL (ชีพจร)</label>
+            <input type="number" id="hBPPul" placeholder="เช่น 75" min="20" max="250" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#ce93d8;">
+            <div style="font-size:10px;color:var(--gray-mid);margin-top:3px;">อัตราการเต้นหัวใจ (ครั้ง/นาที)</div>
           </div>
         </div>
-        <div id="bpStatusMsg" style="margin-top:8px;font-size:12px;color:var(--gray-mid);"></div>
+        <div id="bpStatusMsg" style="margin-top:10px;"></div>
       </div>
       <div class="form-group" style="margin-bottom:12px;">
         <label>น้ำตาลในเลือด (mg/dL)</label>
@@ -418,6 +428,11 @@ input[type="file"] { display:none; }
       </div>
       <div id="diseaseOtherField" style="display:none;margin-top:10px;">
         <input id="hDiseaseOther" placeholder="ระบุโรคอื่นๆ..." style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;">
+      </div>
+      <!-- หมายเหตุ -->
+      <div style="margin-top:12px;">
+        <label style="font-size:12px;font-weight:600;color:var(--text-sub);display:block;margin-bottom:4px;">📝 หมายเหตุ / บันทึกเพิ่มเติม</label>
+        <textarea id="hDiseaseNote" rows="2" placeholder="บันทึกข้อมูลเพิ่มเติม เช่น ประวัติการรักษา ยาที่ใช้ หรือข้อสังเกตอื่นๆ..." style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;resize:vertical;"></textarea>
       </div>
       <!-- ประเภทความพิการ -->
       <div id="disabilityFields" style="display:none;margin-top:12px;background:#fff3e0;border-radius:8px;padding:12px 14px;border:1px solid #ffcc02;">
@@ -617,36 +632,115 @@ function personIconSVG(size) {
 }
 
 function calcAgeFromBirth() {
-  const birthEl = document.getElementById('hBirthDate');
-  const ageEl = document.getElementById('hAgeDisplay');
+  const dayEl   = document.getElementById('hBirthDay');
+  const monEl   = document.getElementById('hBirthMonth');
+  const yearEl  = document.getElementById('hBirthYear');
+  const ageEl   = document.getElementById('hAgeDisplay');
   const childFields = document.getElementById('childHealthFields');
-  if (!birthEl || !ageEl) return;
-  const val = birthEl.value;
-  if (!val) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
-  const birth = new Date(val);
+  if (!ageEl) return;
+
+  const day  = parseInt(dayEl?.value)  || 0;
+  const mon  = parseInt(monEl?.value)  || 0;  // 1-12
+  const beYear = parseInt(yearEl?.value) || 0;
+
+  if (!beYear || beYear < 2400) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
+
+  const ceYear = beYear - 543;
+  const birth = new Date(ceYear, mon > 0 ? mon - 1 : 0, day > 0 ? day : 1);
   const today = new Date();
-  if (birth > today) { ageEl.innerHTML = '<span style="color:#c62828;font-size:13px;">❌ วันเกิดห้ามเกินวันปัจจุบัน</span>'; return; }
+
+  if (birth > today) {
+    ageEl.innerHTML = '<span style="color:#c62828;font-size:13px;">❌ วันเกิดห้ามเกินวันปัจจุบัน</span>';
+    return;
+  }
+
   let years = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
   if (years < 0) years = 0;
-  ageEl.innerHTML = `<span class="age-display">อายุ ${years} ปี</span>`;
+
+  let months = today.getMonth() - birth.getMonth();
+  if (months < 0) months += 12;
+
+  const ageLabel = years < 1
+    ? `<span class="age-display" style="background:#e3f2fd;color:#1565c0;">อายุ ${months} เดือน</span>`
+    : `<span class="age-display">อายุ ${years} ปี</span>`;
+  ageEl.innerHTML = ageLabel;
+
   if (childFields) {
     childFields.style.display = years <= 5 ? 'block' : 'none';
   }
 }
 
-function validateBP(input) {
-  const val = input.value.trim();
-  if (!val) { input.style.borderColor = '#dde8e1'; return; }
-  const ok = /^\d{2,3}\/\d{2,3}$/.test(val);
-  input.style.borderColor = ok ? 'var(--green-mid)' : '#c62828';
+// แปลง วัน/เดือน/ปี พ.ศ. → ISO string (YYYY-MM-DD) สำหรับเก็บ
+function getBirthDateISO() {
+  const day    = parseInt(document.getElementById('hBirthDay')?.value)  || 0;
+  const mon    = parseInt(document.getElementById('hBirthMonth')?.value) || 0;
+  const beYear = parseInt(document.getElementById('hBirthYear')?.value)  || 0;
+  if (!beYear || beYear < 2400) return null;
+  const ceYear = beYear - 543;
+  const mm = String(mon || 1).padStart(2, '0');
+  const dd = String(day || 1).padStart(2, '0');
+  return `${ceYear}-${mm}-${dd}`;
+}
+
+// แปลง ISO → วัน/เดือน/ปี พ.ศ. แล้ว fill ลงฟอร์ม
+function setBirthDateFromISO(iso) {
+  if (!iso) return;
+  const parts = iso.split('-');
+  if (parts.length < 3) return;
+  const ceYear = parseInt(parts[0]);
+  const mon  = parseInt(parts[1]);
+  const day  = parseInt(parts[2]);
+  const dayEl  = document.getElementById('hBirthDay');
+  const monEl  = document.getElementById('hBirthMonth');
+  const yearEl = document.getElementById('hBirthYear');
+  if (dayEl)  dayEl.value  = day;
+  if (monEl)  monEl.value  = mon;
+  if (yearEl) yearEl.value = ceYear + 543;
+  calcAgeFromBirth();
+}
+
+function updateBPStatus() {
+  const sys = parseInt(document.getElementById('hBPSys')?.value) || 0;
+  const dia = parseInt(document.getElementById('hBPDia')?.value) || 0;
+  const pul = parseInt(document.getElementById('hBPPul')?.value) || 0;
   const msg = document.getElementById('bpStatusMsg');
-  if (!ok && val.length > 3) {
-    if (msg) msg.textContent = '⚠️ รูปแบบต้องเป็น ตัวเลข/ตัวเลข เช่น 120/80';
+  if (!msg) return;
+
+  if (!sys && !dia) { msg.innerHTML = ''; return; }
+
+  // BP classification (อ้างอิง AHA/WHO)
+  let bpClass = '', bpColor = '', bpBg = '', bpIcon = '';
+  if (sys < 90 || dia < 60) {
+    bpClass='ความดันต่ำ'; bpColor='#1565c0'; bpBg='#e3f2fd'; bpIcon='⬇️';
+  } else if (sys > 180 || dia > 120) {
+    bpClass='ความดันวิกฤต ‼️ ควรพบแพทย์ทันที'; bpColor='#b71c1c'; bpBg='#ffebee'; bpIcon='🚨';
+  } else if (sys >= 140 || dia >= 90) {
+    bpClass='ความดันสูงระดับ 2'; bpColor='#c62828'; bpBg='#ffebee'; bpIcon='🔴';
+  } else if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89)) {
+    bpClass='ความดันสูงระดับ 1'; bpColor='#e65100'; bpBg='#fff3e0'; bpIcon='🟠';
+  } else if (sys >= 120 && sys <= 129 && dia < 80) {
+    bpClass='ความดันสูงขอบเขต (Elevated)'; bpColor='#f57f17'; bpBg='#fffde7'; bpIcon='🟡';
   } else {
-    if (msg) msg.textContent = '';
+    bpClass='ปกติ'; bpColor='#1b5e20'; bpBg='#e8f5e9'; bpIcon='✅';
   }
+
+  // Pulse check
+  let pulMsg = '';
+  if (pul) {
+    if (pul < 60) pulMsg = ' | ชีพจรช้า (<60)';
+    else if (pul > 100) pulMsg = ' | ชีพจรเร็ว (>100)';
+    else pulMsg = ' | ชีพจรปกติ';
+  }
+
+  msg.innerHTML = `<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:${bpBg};border:1.5px solid ${bpColor}30;">
+    <span style="font-size:18px;">${bpIcon}</span>
+    <div>
+      <span style="font-weight:700;color:${bpColor};font-size:14px;">${bpClass}</span>
+      ${sys&&dia ? `<span style="color:var(--gray-mid);font-size:12px;margin-left:6px;">${sys}/${dia} mmHg${pulMsg}</span>` : ''}
+    </div>
+  </div>`;
 }
 
 function toggleDisease(label, value) {
@@ -874,15 +968,18 @@ function mapHealthRow(h) {
     diseases: diseases,
     disabilityType: h.disability_type || '',
     diseaseOther: h.disease_other || '',
+    diseaseNote: h.disease_note || '',
     height: h.height,
     weight: h.weight,
     bmi: h.bmi,
-    // ความดันใหม่ (3 ครั้ง)
+    // ความดัน (SYS/DIA/PUL เก็บใน blood_pressure_1 รูปแบบ "120/80/72")
     bp1: h.blood_pressure_1 || '',
-    bp2: h.blood_pressure_2 || '',
-    bp3: h.blood_pressure_3 || '',
-    // ความดันเก่า
-    bp: h.blood_pressure || '',
+    bp2: '',
+    bp3: '',
+    bp: h.blood_pressure_1 || h.blood_pressure || '',
+    bpSys: (h.blood_pressure_1||'').split('/')[0] || '',
+    bpDia: (h.blood_pressure_1||'').split('/')[1] || '',
+    bpPul: (h.blood_pressure_1||'').split('/')[2] || '',
     bloodSugar: h.blood_sugar,
     headSize: h.head_size,
     vaccineCompleted: h.vaccine_completed || false,
@@ -920,12 +1017,13 @@ async function dbAddHealth(d) {
     diseases: Array.isArray(d.diseases) ? d.diseases : [],
     disability_type: d.disabilityType || null,
     disease_other: d.diseaseOther || null,
+    disease_note: d.diseaseNote || null,
     height: d.height || null,
     weight: d.weight || null,
     bmi: d.bmi || null,
     blood_pressure_1: d.bp1 || null,
-    blood_pressure_2: d.bp2 || null,
-    blood_pressure_3: d.bp3 || null,
+    blood_pressure_2: null,
+    blood_pressure_3: null,
     blood_pressure: d.bp1 || null,
     blood_sugar: d.bloodSugar || null,
     head_size: d.headSize || null,
@@ -953,12 +1051,13 @@ async function dbUpdateHealth(id, d) {
     diseases: Array.isArray(d.diseases) ? d.diseases : [],
     disability_type: d.disabilityType || null,
     disease_other: d.diseaseOther || null,
+    disease_note: d.diseaseNote || null,
     height: d.height || null,
     weight: d.weight || null,
     bmi: d.bmi || null,
     blood_pressure_1: d.bp1 || null,
-    blood_pressure_2: d.bp2 || null,
-    blood_pressure_3: d.bp3 || null,
+    blood_pressure_2: null,
+    blood_pressure_3: null,
     blood_pressure: d.bp1 || null,
     blood_sugar: d.bloodSugar || null,
     head_size: d.headSize || null,
@@ -1061,6 +1160,22 @@ function loadDefaultMembers() {
     {id:3,name:'นางสาวสุภาพ รักษ์ดี',role:'เลขานุการ',phone:'083-456-7890',photo:'',village:'9'},
     {id:4,name:'นางวิไล ชื่นใจ',role:'เหรัญญิก',phone:'084-567-8901',photo:'',village:'9'},
     {id:5,name:'นางสาวรัตนา งามจิต',role:'กรรมการ',phone:'085-678-9012',photo:'',village:'9'},
+    {id:6,name:'นางประนอม แสนดี',role:'กรรมการ',phone:'086-789-0123',photo:'',village:'9'},
+    {id:7,name:'นางสาวกัลยา พรมมา',role:'กรรมการ',phone:'087-890-1234',photo:'',village:'9'},
+    {id:8,name:'นางบุญมี ศรีสุข',role:'กรรมการ',phone:'088-901-2345',photo:'',village:'9'},
+    {id:9,name:'นางเพ็ญ จันทร์แดง',role:'กรรมการ',phone:'089-012-3456',photo:'',village:'9'},
+    {id:10,name:'นางสาวอรุณี วงค์คำ',role:'กรรมการ',phone:'081-123-4567',photo:'',village:'9'},
+    {id:11,name:'นางนงนุช ดาวเรือง',role:'กรรมการ',phone:'082-234-5678',photo:'',village:'9'},
+    {id:12,name:'นางสาวพิมพ์ใจ ทองดี',role:'กรรมการ',phone:'083-345-6789',photo:'',village:'9'},
+    {id:13,name:'นางสุดา ฤทธิ์เดช',role:'กรรมการ',phone:'084-456-7890',photo:'',village:'9'},
+    {id:14,name:'นางจำปี ผลดี',role:'กรรมการ',phone:'085-567-8901',photo:'',village:'9'},
+    {id:15,name:'นางสาวทิพย์วรรณ มีสุข',role:'กรรมการ',phone:'086-678-9012',photo:'',village:'9'},
+    {id:16,name:'นางลัดดา ใจงาม',role:'กรรมการ',phone:'087-789-0123',photo:'',village:'9'},
+    {id:17,name:'นางสาวอำพร พงษ์ไพร',role:'กรรมการ',phone:'088-890-1234',photo:'',village:'9'},
+    {id:18,name:'นางปราณี สุขสำราญ',role:'กรรมการ',phone:'089-901-2345',photo:'',village:'9'},
+    {id:19,name:'นางวันเพ็ญ ชัยเจริญ',role:'กรรมการ',phone:'081-012-3456',photo:'',village:'9'},
+    {id:20,name:'นางสาวเบญจวรรณ แก้วใส',role:'กรรมการ',phone:'082-123-4567',photo:'',village:'9'},
+    {id:21,name:'นางสมศรี ทำดี',role:'กรรมการ',phone:'083-234-5678',photo:'',village:'9'},
   ];
 }
 
@@ -1704,17 +1819,17 @@ function logoutHealth() { loggedInAsom=null;healthMembers=[];localStorage.remove
 
 function openAddHealthModal() {
   document.getElementById('editHealthId').value = '';
-  const fields = ['hFirstName','hLastName','hAddress','hIdCard','hPhone','hHeight','hWeight','hBMI','hBP1','hBP2','hBP3','hBloodSugar','hHeadSize','hBirthDate','hCaretaker'];
+  const fields = ['hFirstName','hLastName','hAddress','hIdCard','hPhone','hHeight','hWeight','hBMI','hBPSys','hBPDia','hBPPul','hBloodSugar','hHeadSize','hBirthDay','hBirthYear','hDiseaseNote'];
   fields.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('hGender').value = '';
+  document.getElementById('hBirthMonth').value = '';
   document.getElementById('hDisabilityType').value = '';
   document.getElementById('hPhotoPreview').style.display = 'none';
   document.getElementById('hAgeDisplay').innerHTML = '';
-  document.getElementById('bpStatusMsg').textContent = '';
+  document.getElementById('bpStatusMsg').innerHTML = '';
   document.getElementById('childHealthFields').style.display = 'none';
   document.getElementById('hVaccine').checked = false;
   document.getElementById('hDevNormal').checked = true;
-  // reset diseases
   document.querySelectorAll('#diseaseGrid input[type="checkbox"]').forEach(cb => { cb.checked=false; cb.closest('label')?.classList.remove('checked'); });
   document.getElementById('disabilityFields').style.display = 'none';
   document.getElementById('diseaseOtherField').style.display = 'none';
@@ -1730,24 +1845,27 @@ function editHealthMember(id) {
   document.getElementById('hIdCard').value = h.idCard||'';
   document.getElementById('hPhone').value = h.phone||'';
   document.getElementById('hGender').value = h.gender||'';
-  document.getElementById('hBirthDate').value = h.birthDate||'';
-  document.getElementById('hCaretaker').value = h.caretaker||'';
   document.getElementById('hHeight').value = h.height||'';
   document.getElementById('hWeight').value = h.weight||'';
   document.getElementById('hBMI').value = h.bmi||'';
-  document.getElementById('hBP1').value = h.bp1||'';
-  document.getElementById('hBP2').value = h.bp2||'';
-  document.getElementById('hBP3').value = h.bp3||'';
   document.getElementById('hBloodSugar').value = h.bloodSugar||'';
   document.getElementById('hHeadSize').value = h.headSize||'';
   document.getElementById('hVaccine').checked = h.vaccineCompleted||false;
   document.getElementById('hDevNormal').checked = h.developmentNormal!==false;
   document.getElementById('hDisabilityType').value = h.disabilityType||'';
+  document.getElementById('hDiseaseNote').value = h.diseaseNote||'';
+  // BP fields (parse from stored "sys/dia/pul" or "sys/dia")
+  const bpStr = h.bp1||h.bp||'';
+  const bpParts = bpStr.split('/');
+  document.getElementById('hBPSys').value = bpParts[0]||'';
+  document.getElementById('hBPDia').value = bpParts[1]||'';
+  document.getElementById('hBPPul').value = bpParts[2]||h.bpPul||'';
+  // วันเกิด จาก ISO → พ.ศ.
+  setBirthDateFromISO(h.birthDate||'');
   setSelectedDiseases(h.diseases||[]);
   if (h.photo) { document.getElementById('hPhotoPreview').src=h.photo; document.getElementById('hPhotoPreview').style.display='block'; }
   else document.getElementById('hPhotoPreview').style.display='none';
-  // trigger age calc
-  calcAgeFromBirth();
+  updateBPStatus();
   openModal('addHealthModal');
 }
 
@@ -1764,18 +1882,17 @@ async function saveHealthMember() {
   const lastName = document.getElementById('hLastName').value.trim();
   if (!firstName) { showToast('❌ กรุณาใส่ชื่อ'); return; }
 
-  // Validation
-  const bp1 = document.getElementById('hBP1').value.trim();
-  const bp2 = document.getElementById('hBP2').value.trim();
-  const bp3 = document.getElementById('hBP3').value.trim();
-  if (bp1 && !/^\d{2,3}\/\d{2,3}$/.test(bp1)) { showToast('❌ ความดันครั้งที่ 1 ต้องเป็นรูปแบบ 120/80'); return; }
-  if (bp2 && !/^\d{2,3}\/\d{2,3}$/.test(bp2)) { showToast('❌ ความดันครั้งที่ 2 ต้องเป็นรูปแบบ 120/80'); return; }
-  if (bp3 && !/^\d{2,3}\/\d{2,3}$/.test(bp3)) { showToast('❌ ความดันครั้งที่ 3 ต้องเป็นรูปแบบ 120/80'); return; }
+  // Validation & collect BP
+  const bpSys = document.getElementById('hBPSys').value.trim();
+  const bpDia = document.getElementById('hBPDia').value.trim();
+  const bpPul = document.getElementById('hBPPul').value.trim();
+  if ((bpSys && isNaN(parseInt(bpSys))) || (bpDia && isNaN(parseInt(bpDia)))) { showToast('❌ ค่าความดันต้องเป็นตัวเลข'); return; }
+  const bp1 = bpSys && bpDia ? `${bpSys}/${bpDia}${bpPul ? '/'+bpPul : ''}` : '';
 
   const headSize = document.getElementById('hHeadSize').value;
   if (headSize && isNaN(parseFloat(headSize))) { showToast('❌ รอบศีรษะต้องเป็นตัวเลข'); return; }
 
-  const birthDate = document.getElementById('hBirthDate').value;
+  const birthDate = getBirthDateISO();
   if (birthDate && new Date(birthDate) > new Date()) { showToast('❌ วันเกิดห้ามเกินวันปัจจุบัน'); return; }
 
   // คำนวณอายุ
@@ -1791,8 +1908,12 @@ async function saveHealthMember() {
   const diseases = getSelectedDiseases();
   const photoSrc = document.getElementById('hPhotoPreview').src||'';
 
+  // BP classification text สำหรับเก็บ
+  const bpStatus = bpSys && bpDia ? bpStatusText(bpSys, bpDia) : '';
+
   const data = {
     asomId: loggedInAsom?.id,
+    caretaker: loggedInAsom?.name || '',
     firstName, lastName,
     address: document.getElementById('hAddress').value.trim(),
     idCard: document.getElementById('hIdCard').value.trim(),
@@ -1800,14 +1921,16 @@ async function saveHealthMember() {
     gender: document.getElementById('hGender').value,
     birthDate: birthDate||null,
     age,
-    caretaker: document.getElementById('hCaretaker').value.trim(),
     diseases,
     disabilityType: diseases.includes('พิการ') ? document.getElementById('hDisabilityType').value : '',
     diseaseOther: diseases.includes('อื่นๆ') ? document.getElementById('hDiseaseOther')?.value||'' : '',
+    diseaseNote: document.getElementById('hDiseaseNote').value.trim(),
     height: document.getElementById('hHeight').value||null,
     weight: document.getElementById('hWeight').value||null,
     bmi: document.getElementById('hBMI').value||null,
-    bp1, bp2, bp3,
+    bp1, bp2: '', bp3: '',
+    bpSys: bpSys||null, bpDia: bpDia||null, bpPul: bpPul||null,
+    bpStatus,
     bp: bp1,
     bloodSugar: document.getElementById('hBloodSugar').value||null,
     headSize: headSize||null,
