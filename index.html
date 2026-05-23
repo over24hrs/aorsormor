@@ -1503,6 +1503,56 @@ async function dbSetPassword(asomId, password) {
   if (error) { dbErr('บันทึกรหัสผ่าน', error); return false; }
   return true;
 }
+  // ============================================================
+// SESSION MANAGEMENT (จดจำการเข้าสู่ระบบทุกอุปกรณ์)
+// ============================================================
+function generateSessionToken() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function dbCreateSession(asomId) {
+  const token = generateSessionToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 วัน
+  const { error } = await db.from('asom_sessions').insert({
+    asom_id: asomId,
+    session_token: token,
+    expires_at: expiresAt
+  });
+  if (error) { console.warn('createSession error:', error); return null; }
+  return token;
+}
+
+async function dbVerifySession(token) {
+  if (!token) return null;
+  const { data, error } = await db.from('asom_sessions')
+    .select('asom_id, expires_at')
+    .eq('session_token', token)
+    .single();
+  if (error || !data) return null;
+  if (new Date(data.expires_at) < new Date()) {
+    await db.from('asom_sessions').delete().eq('session_token', token);
+    return null;
+  }
+  return data.asom_id;
+}
+
+async function dbDeleteSession(token) {
+  if (!token) return;
+  await db.from('asom_sessions').delete().eq('session_token', token);
+}
+
+function saveSessionLocal(token) {
+  localStorage.setItem('asomSessionToken', token);
+}
+function getSessionLocal() {
+  return localStorage.getItem('asomSessionToken') || null;
+}
+function clearSessionLocal() {
+  localStorage.removeItem('asomSessionToken');
+  localStorage.removeItem('asomRemember'); // ลบของเก่าด้วย
+}
 
 async function dbGetSettings() {
   const { data, error } = await db.from('settings').select('key,value');
@@ -1563,12 +1613,35 @@ async function initApp() {
     if (settingsData.marquee_text) document.getElementById('marqueeText').textContent = settingsData.marquee_text;
     // ถ้า Supabase members ว่างเปล่า → seed ข้อมูล 21 คนอัตโนมัติ
     if (membersData.length === 0) await autoSeedMembersIfEmpty();
-    const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
-    if (remembered?.id) {
-      const dbPw = await dbGetPassword(remembered.id);
-      if (dbPw && dbPw === remembered.pw) {
-        loggedInAsom = members.find(m => String(m.id) === String(remembered.id)) || null;
-        if (loggedInAsom) healthMembers = await dbGetHealth(remembered.id);
+    // ตรวจสอบ session token (ทุกอุปกรณ์)
+    const sessionToken = getSessionLocal();
+    if (sessionToken) {
+      const asomId = await dbVerifySession(sessionToken);
+      if (asomId) {
+        loggedInAsom = members.find(m => String(m.id) === String(asomId)) || null;
+        if (loggedInAsom) {
+          healthMembers = await dbGetHealth(asomId);
+        }
+      } else {
+        clearSessionLocal(); // token หมดอายุหรือไม่ถูกต้อง
+      }
+    } else {
+      // fallback: ลองอ่านของเก่า (asomRemember) ครั้งเดียว แล้วอัปเกรด
+      const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
+      if (remembered?.id) {
+        const dbPw = await dbGetPassword(remembered.id);
+        if (dbPw && dbPw === remembered.pw) {
+          loggedInAsom = members.find(m => String(m.id) === String(remembered.id)) || null;
+          if (loggedInAsom) {
+            healthMembers = await dbGetHealth(remembered.id);
+            // อัปเกรดเป็น session token อัตโนมัติ
+            const newToken = await dbCreateSession(remembered.id);
+            if (newToken) saveSessionLocal(newToken);
+            localStorage.removeItem('asomRemember');
+          }
+        } else {
+          localStorage.removeItem('asomRemember');
+        }
       }
     }
     showToast('✅ เชื่อมต่อฐานข้อมูลสำเร็จ');
@@ -2577,23 +2650,42 @@ async function resetAsomPassword() {
   else showToast('❌ ไม่สามารถลบรหัสผ่านได้');
 }
 async function doLogin() {
-  const id=document.getElementById('loginSelect')?.value||'';
-  const pw=document.getElementById('loginPw')?.value||'';
-  if(!id){showToast('❌ กรุณาเลือก อสม. ก่อน');return;}
-  if(!pw){showToast('❌ กรุณาใส่รหัสผ่าน');return;}
+  const id = document.getElementById('loginSelect')?.value || '';
+  const pw = document.getElementById('loginPw')?.value || '';
+  const remember = document.getElementById('rememberPw')?.checked || false;
+  if (!id) { showToast('❌ กรุณาเลือก อสม. ก่อน'); return; }
+  if (!pw) { showToast('❌ กรุณาใส่รหัสผ่าน'); return; }
   showToast('⏳ กำลังตรวจสอบ...');
   const dbPw = await dbGetPassword(Number(id));
-  if(!dbPw){showToast('❌ ยังไม่มีรหัสผ่าน กรุณาตั้งรหัสผ่านก่อน');return;}
-  if(pw!==dbPw){showToast('❌ รหัสผ่านไม่ถูกต้อง');return;}
-  loggedInAsom = members.find(m=>String(m.id)===String(id))||null;
-  if(document.getElementById('rememberPw')?.checked){localStorage.setItem('asomRemember',JSON.stringify({id,pw}));}
-  else{localStorage.removeItem('asomRemember');}
+  if (!dbPw) { showToast('❌ ยังไม่มีรหัสผ่าน กรุณาตั้งรหัสผ่านก่อน'); return; }
+  if (pw !== dbPw) { showToast('❌ รหัสผ่านไม่ถูกต้อง'); return; }
+  loggedInAsom = members.find(m => String(m.id) === String(id)) || null;
+  if (remember) {
+    // สร้าง session token เก็บใน Supabase (ใช้ได้ทุกอุปกรณ์ 30 วัน)
+    showToast('⏳ กำลังบันทึก session...');
+    const token = await dbCreateSession(Number(id));
+    if (token) {
+      saveSessionLocal(token);
+      showToast('✅ จดจำการเข้าสู่ระบบแล้ว (30 วัน)');
+    }
+  } else {
+    clearSessionLocal();
+  }
   showToast('⏳ กำลังโหลดข้อมูลสมาชิก...');
   healthMembers = await dbGetHealth(Number(id));
   showToast('✅ เข้าสู่ระบบสำเร็จ');
   render();
 }
-function logoutHealth() { loggedInAsom=null;healthMembers=[];localStorage.removeItem('asomRemember');render(); }
+async function logoutHealth() {
+  const token = getSessionLocal();
+  if (token) {
+    await dbDeleteSession(token); // ลบ session จาก Supabase
+  }
+  clearSessionLocal();
+  loggedInAsom = null;
+  healthMembers = [];
+  render();
+}
 
 function openAddHealthModal() {
   document.getElementById('editHealthId').value = '';
