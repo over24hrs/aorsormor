@@ -3282,7 +3282,7 @@ function exportAllExcel() { exportHealthExcel(); }
 // ============================================================
 function renderMosquitoSurvey() {
   const groupColors = ['group-color-1','group-color-2','group-color-3','group-color-4'];
-  const groupNames = ['\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 1','\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 2','\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 3','\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 4'];
+  const groupNames = ['กลุ่มที่ 1','กลุ่มที่ 2','กลุ่มที่ 3','กลุ่มที่ 4'];
 
   const groupCards = [1,2,3,4].map(gNum => {
     const colorClass = groupColors[gNum-1];
@@ -3302,8 +3302,18 @@ function renderMosquitoSurvey() {
           + '</div>'
         : '<div style="' + avatarStyle + '">' + initial + '</div>';
 
-      const moveOpts = [1,2,3,4].filter(n => n !== gNum).map(n => '<option value="' + n + '">ย้ายกลุ่ม ' + n + '</option>').join('');
       const phoneHtml = m.phone ? '<div class="survey-member-phone">📞 ' + m.phone + '</div>' : '';
+
+      // ปุ่มแก้ไข/ย้าย/ลบ — แสดงเฉพาะโหมดแอดมิน
+      const adminControls = isAdmin
+        ? '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
+          + '<select onchange="moveMosquitoMember(' + g.id + ',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;max-width:72px;">'
+          + '<option value="">ย้าย▾</option>'
+          + [1,2,3,4].filter(n => n !== gNum).map(n => '<option value="' + n + '">กลุ่ม ' + n + '</option>').join('')
+          + '</select>'
+          + '<button onclick="removeMosquitoMember(' + g.id + ')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;" title="ลบออกจากกลุ่ม">🗑️</button>'
+          + '</div>'
+        : '';
 
       return '<div class="survey-member-row">'
         + '<span class="survey-member-num">' + (idx+1) + '</span>'
@@ -3312,30 +3322,46 @@ function renderMosquitoSurvey() {
         + '<div class="survey-member-name">' + m.name + '</div>'
         + phoneHtml
         + '</div>'
-        + '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
-        + '<select onchange="moveMosquitoMember(' + g.id + ',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;max-width:72px;">'
-        + '<option value="">ย้าย▾</option>' + moveOpts
-        + '</select>'
-        + '<button onclick="removeMosquitoMember(' + g.id + ')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;" title="ลบออกจากกลุ่ม">🗑️</button>'
-        + '</div>'
+        + adminControls
         + '</div>';
     }).join('');
 
-    const emptyMsg = '<div style="text-align:center;padding:20px 0;color:var(--gray-mid);font-size:13px;">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e19\u0e35\u0e49</div>';
+    const emptyMsg = '<div style="text-align:center;padding:20px 0;color:var(--gray-mid);font-size:13px;">ยังไม่มีสมาชิกในกลุ่มนี้</div>';
+
+    // ปุ่มเพิ่มสมาชิก — แสดงเฉพาะโหมดแอดมิน
+    const addBtn = isAdmin
+      ? '<button class="survey-add-btn" onclick="openMosquitoAddModal(' + gNum + ')">➕ เพิ่มสมาชิกเข้ากลุ่ม</button>'
+      : '';
+
     return '<div class="survey-group-card">'
       + '<div class="survey-group-header ' + colorClass + '" style="color:white;">'
-      + '<span class="survey-group-title" style="color:white;">' + '\uD83E\uDDDF' + ' ' + groupNames[gNum-1] + '</span>'
-      + '<span class="survey-group-count" style="color:rgba(255,255,255,.85);">' + groupMembers.length + ' \u0e04\u0e19</span>'
+      + '<span class="survey-group-title" style="color:white;">🦟 ' + groupNames[gNum-1] + '</span>'
+      + '<span class="survey-group-count" style="color:rgba(255,255,255,.85);">' + groupMembers.length + ' คน</span>'
       + '</div>'
       + '<div class="survey-member-list">' + (groupMembers.length ? memberRows : emptyMsg) + '</div>'
-      + '<button class="survey-add-btn" onclick="openMosquitoAddModal(' + gNum + ')">\u2795 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e40\u0e02\u0e49\u0e32\u0e01\u0e25\u0e38\u0e48\u0e21</button>'
+      + addBtn
       + '</div>';
   }).join('');
 
   const totalAssigned = mosquitoSurveyGroups.length;
   const totalMembers = members.length;
-  return '<p class="section-title">\uD83E\uDDDF \u0e01\u0e25\u0e38\u0e48\u0e21\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e25\u0e39\u0e01\u0e19\u0e49\u0e33\u0e22\u0e38\u0e48\u0e07\u0e25\u0e32\u0e22</p>'
-    + '<p class="section-sub">\u0e1c\u0e31\u0e07\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e01\u0e25\u0e38\u0e48\u0e21\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e25\u0e39\u0e01\u0e19\u0e49\u0e33\u0e22\u0e38\u0e48\u0e07\u0e25\u0e32\u0e22 \u0e2d\u0e2a\u0e21. \u0e1a\u0e49\u0e32\u0e19\u0e43\u0e2b\u0e21\u0e48\u0e40\u0e08\u0e23\u0e34\u0e0d\u0e44\u0e1e\u0e23 \u0e2b\u0e21\u0e39\u0e48 9 \u2014 \u0e21\u0e35\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 ' + totalAssigned + ' \u0e04\u0e19 \u0e08\u0e32\u0e01 ' + totalMembers + ' \u0e04\u0e19</p>'
+
+  // แถบ Admin
+  const adminBar = isAdmin
+    ? `<div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="background:var(--gold);color:white;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;">🔑 โหมดแอดมิน</span>
+        <span style="font-size:13px;color:#7a5500;">คุณสามารถเพิ่ม ย้าย และลบสมาชิกในกลุ่มได้</span>
+        <button class="btn-danger" style="margin-left:auto;font-size:12px;padding:5px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
+      </div>`
+    : `<div style="background:#fff8e1;border:1.5px solid #ffe082;border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:20px;">🔒</span>
+        <span style="font-size:13px;color:#7a5500;">การแก้ไขกลุ่มสำรวจสามารถทำได้เฉพาะโหมดแอดมินเท่านั้น</span>
+        <button class="btn-primary" style="margin-left:auto;font-size:12px;padding:5px 14px;" onclick="toggleAdmin()">🔑 เข้าสู่โหมดแอดมิน</button>
+      </div>`;
+
+  return '<p class="section-title">🦟 กลุ่มสำรวจลูกน้ำยุงลาย</p>'
+    + '<p class="section-sub">ผังองค์กรกลุ่มสำรวจลูกน้ำยุงลาย อสม. บ้านใหม่เจริญไพร หมู่ 9 — มีสมาชิกทั้งหมด ' + totalAssigned + ' คน จาก ' + totalMembers + ' คน</p>'
+    + adminBar
     + '<div class="survey-groups-grid">' + groupCards + '</div>';
 }
 
