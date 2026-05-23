@@ -2981,52 +2981,57 @@ function exportAllExcel() { exportHealthExcel(); }
 // ============================================================
 function renderMosquitoSurvey() {
   const groupColors = ['group-color-1','group-color-2','group-color-3','group-color-4'];
-  const groupNames = ['กลุ่มที่ 1','กลุ่มที่ 2','กลุ่มที่ 3','กลุ่มที่ 4'];
+  const groupNames = ['\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 1','\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 2','\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 3','\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e35\u0e48 4'];
 
   const groupCards = [1,2,3,4].map(gNum => {
     const colorClass = groupColors[gNum-1];
     const groupMembers = mosquitoSurveyGroups.filter(g => g.groupNumber === gNum);
+
     const memberRows = groupMembers.map((g, idx) => {
       const m = members.find(x => String(x.id) === String(g.memberId));
       if (!m) return '';
-      const photo = m.photo
-        ? `<img src="${m.photo}" class="survey-member-photo" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('afterbegin','${personIconSVG(40).replace(/`/g,"'").replace(/"/g,'\"')}')">`
-        : personIconSVG(40);
-      return `<div class="survey-member-row">
-        <span class="survey-member-num">${idx+1}</span>
-        ${photo}
-        <span class="survey-member-name">${m.name}</span>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <select onchange="moveMosquitoMember(${g.id}, this.value)" style="font-size:11px;padding:3px 6px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;" title="ย้ายไปกลุ่ม">
-            <option value="">ย้ายกลุ่ม</option>
-            ${[1,2,3,4].filter(n=>n!==gNum).map(n=>`<option value="${n}">กลุ่ม ${n}</option>`).join('')}
-          </select>
-          <button onclick="removeMosquitoMember(${g.id},'${m.name.replace(/'/g,"\'")}')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;" title="ลบออกจากกลุ่ม">🗑️</button>
-        </div>
-      </div>`;
+      const initial = getInitials(m.name);
+      const avatarStyle = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Kanit,sans-serif;font-size:15px;font-weight:700;color:var(--green-mid);background:var(--green-pale);border:2px solid var(--green-light);flex-shrink:0;';
+      const pid = 'sgp' + g.id;
+      const piid = 'sgpi' + g.id;
+      const photoHtml = m.photo
+        ? '<div style="position:relative;width:44px;height:44px;flex-shrink:0;">'
+          + '<img id="' + pid + '" src="' + m.photo + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);display:block;" onerror="this.style.display=\'none\';document.getElementById(\''+piid+'\').style.display=\'flex\';">'
+          + '<div id="' + piid + '" style="' + avatarStyle + 'display:none;position:absolute;top:0;left:0;">' + initial + '</div>'
+          + '</div>'
+        : '<div style="' + avatarStyle + '">' + initial + '</div>';
+
+      const moveOpts = [1,2,3,4].filter(n => n !== gNum).map(n => '<option value="' + n + '">' + '\u0e01\u0e25\u0e38\u0e48\u0e21 ' + n + '</option>').join('');
+
+      return '<div class="survey-member-row">'
+        + '<span class="survey-member-num">' + (idx+1) + '</span>'
+        + photoHtml
+        + '<span class="survey-member-name" style="flex:1;min-width:0;">' + m.name + '</span>'
+        + '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
+        + '<select onchange="moveMosquitoMember(' + g.id + ',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;max-width:80px;">'
+        + '<option value="">\u0e22\u0e49\u0e32\u0e22\u25be</option>' + moveOpts
+        + '</select>'
+        + '<button onclick="removeMosquitoMember(' + g.id + ')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:13px;" title="\u0e25\u0e1a\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e01\u0e25\u0e38\u0e48\u0e21">' + '\uD83D\uDDD1\uFE0F' + '</button>'
+        + '</div>'
+        + '</div>';
     }).join('');
 
-    return `<div class="survey-group-card">
-      <div class="survey-group-header ${colorClass}" style="color:white;">
-        <span class="survey-group-title" style="color:white;">🦟 ${groupNames[gNum-1]}</span>
-        <span class="survey-group-count" style="color:rgba(255,255,255,.85);">${groupMembers.length} คน</span>
-      </div>
-      <div class="survey-member-list">
-        ${groupMembers.length ? memberRows : '<div style="text-align:center;padding:16px 0;color:var(--gray-mid);font-size:13px;">ยังไม่มีสมาชิกในกลุ่มนี้</div>'}
-      </div>
-      <button class="survey-add-btn" onclick="openMosquitoAddModal(${gNum})">➕ เพิ่มสมาชิกเข้ากลุ่ม</button>
-    </div>`;
+    const emptyMsg = '<div style="text-align:center;padding:20px 0;color:var(--gray-mid);font-size:13px;">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e19\u0e35\u0e49</div>';
+    return '<div class="survey-group-card">'
+      + '<div class="survey-group-header ' + colorClass + '" style="color:white;">'
+      + '<span class="survey-group-title" style="color:white;">' + '\uD83E\uDDDF' + ' ' + groupNames[gNum-1] + '</span>'
+      + '<span class="survey-group-count" style="color:rgba(255,255,255,.85);">' + groupMembers.length + ' \u0e04\u0e19</span>'
+      + '</div>'
+      + '<div class="survey-member-list">' + (groupMembers.length ? memberRows : emptyMsg) + '</div>'
+      + '<button class="survey-add-btn" onclick="openMosquitoAddModal(' + gNum + ')">\u2795 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e40\u0e02\u0e49\u0e32\u0e01\u0e25\u0e38\u0e48\u0e21</button>'
+      + '</div>';
   }).join('');
 
   const totalAssigned = mosquitoSurveyGroups.length;
   const totalMembers = members.length;
-
-  return `
-    <p class="section-title">🦟 กลุ่มสำรวจลูกน้ำยุ่งลาย</p>
-    <p class="section-sub">ผังองค์กรกลุ่มสำรวจลูกน้ำยุ่งลาย อสม. บ้านใหม่เจริญไพร หมู่ 9 — มีสมาชิกทั้งหมด ${totalAssigned} คน จาก ${totalMembers} คน</p>
-    <div class="survey-groups-grid">
-      ${groupCards}
-    </div>`;
+  return '<p class="section-title">\uD83E\uDDDF \u0e01\u0e25\u0e38\u0e48\u0e21\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e25\u0e39\u0e01\u0e19\u0e49\u0e33\u0e22\u0e38\u0e48\u0e07\u0e25\u0e32\u0e22</p>'
+    + '<p class="section-sub">\u0e1c\u0e31\u0e07\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e01\u0e25\u0e38\u0e48\u0e21\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e25\u0e39\u0e01\u0e19\u0e49\u0e33\u0e22\u0e38\u0e48\u0e07\u0e25\u0e32\u0e22 \u0e2d\u0e2a\u0e21. \u0e1a\u0e49\u0e32\u0e19\u0e43\u0e2b\u0e21\u0e48\u0e40\u0e08\u0e23\u0e34\u0e0d\u0e44\u0e1e\u0e23 \u0e2b\u0e21\u0e39\u0e48 9 \u2014 \u0e21\u0e35\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 ' + totalAssigned + ' \u0e04\u0e19 \u0e08\u0e32\u0e01 ' + totalMembers + ' \u0e04\u0e19</p>'
+    + '<div class="survey-groups-grid">' + groupCards + '</div>';
 }
 
 function openMosquitoAddModal(groupNum) {
@@ -3060,12 +3065,15 @@ async function saveMosquitoGroupMember() {
   }
 }
 
-async function removeMosquitoMember(id, name) {
-  if (!confirm(`ต้องการลบ "${name}" ออกจากกลุ่มหรือไม่?`)) return;
+async function removeMosquitoMember(id) {
+  const entry = mosquitoSurveyGroups.find(g => g.id === id);
+  const m = entry ? members.find(x => String(x.id) === String(entry.memberId)) : null;
+  const name = m ? m.name : '\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01';
+  if (!confirm('\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e1a "' + name + '" \u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e01\u0e25\u0e38\u0e48\u0e21\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?')) return;
   const ok = await dbDeleteMosquitoGroupMember(id);
   if (ok) {
     mosquitoSurveyGroups = mosquitoSurveyGroups.filter(g => g.id !== id);
-    showToast('✅ ลบสมาชิกออกจากกลุ่มสำเร็จ');
+    showToast('\u2705 \u0e25\u0e1a ' + name + ' \u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e01\u0e25\u0e38\u0e48\u0e21\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08');
     render();
   }
 }
