@@ -792,7 +792,7 @@ let healthMembers = [];
 let allHealthMembers = [];
 let activityPosts = [];
 let mosquitoSurveyGroups = [];
-let isAdmin = false;
+let isAdmin = localStorage.getItem('adminSession') === '1';
 let calMonth = new Date().getMonth();
 let calYear = new Date().getFullYear();
 let currentPage = 'home';
@@ -1891,10 +1891,22 @@ async function uploadMemberPhoto(id) {
 }
 
 function toggleAdmin() {
-  if (isAdmin) { isAdmin = false; render(); return; }
+  if (isAdmin) {
+    isAdmin = false;
+    localStorage.removeItem('adminSession');
+    render();
+    showToast('🔒 ออกจากโหมดแอดมินแล้ว');
+    return;
+  }
   const pw = prompt('รหัสผ่านแอดมิน:');
-  if (pw === 'admin123') { isAdmin = true; render(); showToast('✅ เข้าสู่โหมดแอดมิน'); }
-  else if (pw !== null) showToast('❌ รหัสผ่านไม่ถูกต้อง');
+  if (pw === 'admin123') {
+    isAdmin = true;
+    localStorage.setItem('adminSession', '1');
+    render();
+    showToast('✅ เข้าสู่โหมดแอดมิน');
+  } else if (pw !== null) {
+    showToast('❌ รหัสผ่านไม่ถูกต้อง');
+  }
 }
 
 function openAddMemberModal() {
@@ -1967,6 +1979,18 @@ function saveVillageInfo() {
 // FINANCE
 // ============================================================
 function renderFinance() {
+  // ถ้าไม่ใช่ Admin แสดงหน้าบล็อก
+  if (!isAdmin) {
+    return `
+      <p class="section-title">💰 รายรับ-รายจ่าย</p>
+      <div style="text-align:center;padding:60px 20px;max-width:400px;margin:0 auto;">
+        <div style="font-size:72px;margin-bottom:20px;">🔒</div>
+        <h2 style="font-family:Kanit,sans-serif;font-size:20px;color:var(--green-dark);margin-bottom:8px;">เฉพาะผู้ดูแลระบบเท่านั้น</h2>
+        <p style="color:var(--gray-mid);font-size:14px;margin-bottom:28px;line-height:1.6;">หน้านี้สามารถเข้าถึงได้เฉพาะโหมดแอดมิน<br>กรุณาเข้าสู่โหมดแอดมินก่อนใช้งาน</p>
+        <button class="btn-primary" style="padding:12px 32px;font-size:15px;" onclick="toggleAdmin()">🔑 เข้าสู่โหมดแอดมิน</button>
+      </div>`;
+  }
+
   const income = finances.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount),0);
   const expense = finances.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount),0);
   const balance = income - expense;
@@ -1980,6 +2004,11 @@ function renderFinance() {
   return `
     <p class="section-title">💰 รายรับ-รายจ่าย</p>
     <p class="section-sub">บัญชีการเงินกลุ่ม อสม. บ้านใหม่เจริญไพร</p>
+    <div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="background:var(--gold);color:white;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;">🔑 โหมดแอดมิน</span>
+      <span style="font-size:13px;color:#7a5500;">คุณกำลังดูข้อมูลการเงินในฐานะผู้ดูแลระบบ</span>
+      <button class="btn-danger" style="margin-left:auto;font-size:12px;padding:5px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
+    </div>
     <div class="finance-summary">
       <div class="fin-card"><div class="label">รายรับรวม</div><div class="amount income">${income.toLocaleString('th')} ฿</div></div>
       <div class="fin-card"><div class="label">รายจ่ายรวม</div><div class="amount expense">${expense.toLocaleString('th')} ฿</div></div>
@@ -2000,6 +2029,9 @@ function renderFinance() {
         <button class="btn-primary" onclick="saveFinance()">💾 บันทึก</button>
         ${editingFinId ? '<button class="btn-danger" onclick="cancelEditFinance()">ยกเลิก</button>' : ''}
       </div>
+    </div>
+    <div class="fin-form" style="margin-bottom:16px;display:flex;justify-content:flex-end;">
+      <button class="btn-excel" onclick="exportFinanceExcel()">📊 Export Excel</button>
     </div>
     <div class="fin-table"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>หมวด</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>จัดการ</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -3169,7 +3201,35 @@ function exportAttendanceExcel() {
   XLSX.writeFile(wb, fileName);
   showToast('✅ Export Excel สำเร็จ');
 }
-
+function exportFinanceExcel() {
+  if (!finances.length) { showToast('⚠️ ยังไม่มีข้อมูลการเงิน'); return; }
+  const wb = XLSX.utils.book_new();
+  const today = new Date();
+  const exportDate = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()+543}`;
+  const income = finances.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount),0);
+  const expense = finances.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount),0);
+  const rows = [
+    [`รายงานการเงิน อสม. บ้านใหม่เจริญไพร หมู่ 9`, '', '', '', `วันที่ Export: ${exportDate}`],
+    [],
+    ['วันที่', 'ประเภท', 'หมวดหมู่', 'รายละเอียด', 'จำนวน (฿)'],
+    ...finances.map(f => [
+      formatThaiDate(f.date),
+      f.type === 'income' ? 'รายรับ' : 'รายจ่าย',
+      f.category || '',
+      f.desc || '',
+      Number(f.amount)
+    ]),
+    [],
+    ['', '', '', 'รายรับรวม', income],
+    ['', '', '', 'รายจ่ายรวม', expense],
+    ['', '', '', 'คงเหลือ', income - expense],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:14},{wch:10},{wch:14},{wch:28},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'รายรับ-รายจ่าย');
+  XLSX.writeFile(wb, `การเงิน_อสม_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}.xlsx`);
+  showToast('✅ Export Excel สำเร็จ');
+}
 // ============================================================
 // EXCEL EXPORT
 // ============================================================
