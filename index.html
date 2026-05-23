@@ -237,6 +237,36 @@ input[type="file"] { display:none; }
 .section-box { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
 .section-box-title { font-family:'Kanit',sans-serif; font-size:15px; font-weight:600; color:var(--green-dark); margin-bottom:14px; padding-bottom:8px; border-bottom:2px solid var(--green-pale); }
 
+/* MULTI MEDIA UPLOAD */
+.ap-media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px; margin-bottom:10px; }
+.ap-media-thumb { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--green-pale); border:1.5px solid var(--green-light); }
+.ap-media-thumb img, .ap-media-thumb video { width:100%; height:100%; object-fit:cover; display:block; }
+.ap-media-thumb .ap-remove-btn { position:absolute; top:3px; right:3px; background:rgba(229,62,62,.92); color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.ap-media-thumb .ap-vid-icon { position:absolute; bottom:4px; left:4px; background:rgba(0,0,0,.55); color:white; border-radius:4px; font-size:10px; padding:1px 5px; }
+.ap-upload-label { display:inline-flex; align-items:center; gap:6px; background:var(--green-mid); color:white; border:none; border-radius:var(--radius-sm); padding:8px 18px; font-family:'Sarabun',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:.2s; margin-top:6px; }
+.ap-upload-label:hover { background:var(--green-dark); }
+
+/* MEDIA GALLERY (VIEW) */
+.media-gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-bottom:14px; }
+.media-gallery-grid img { width:100%; border-radius:8px; cursor:zoom-in; transition:.2s; display:block; }
+.media-gallery-grid img:hover { opacity:.9; transform:scale(1.02); }
+.media-gallery-grid video { width:100%; border-radius:8px; display:block; }
+.media-gallery-single img { width:100%; max-height:480px; object-fit:contain; border-radius:10px; margin-bottom:14px; cursor:zoom-in; }
+.media-gallery-single video { width:100%; border-radius:10px; margin-bottom:14px; }
+
+/* ATTENDANCE */
+.attendance-section { background:var(--green-pale); border-radius:var(--radius); padding:16px 18px; margin-top:16px; border:1.5px solid var(--green-light); }
+.attendance-section h3 { font-family:'Kanit',sans-serif; font-size:15px; color:var(--green-dark); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.attendance-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.att-chip { background:white; border:1.5px solid var(--green-light); border-radius:99px; padding:5px 14px; font-size:13px; font-weight:500; color:var(--green-dark); display:inline-flex; align-items:center; gap:6px; }
+.att-chip .att-num { background:var(--green-dark); color:white; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+.att-chip .att-del { background:none; border:none; color:#c62828; cursor:pointer; font-size:16px; line-height:1; padding:0 0 0 2px; }
+.att-info-box { background:white; border-radius:8px; padding:10px 14px; margin-bottom:14px; border-left:4px solid var(--green-mid); font-size:13px; }
+
+/* ATTENDANCE MODAL */
+.att-modal-list { border-top:1.5px solid var(--green-pale); padding-top:14px; margin-top:14px; }
+.att-modal-list-title { font-weight:600; font-size:14px; color:var(--green-dark); margin-bottom:10px; }
+
 @media(max-width:600px) {
   header h1 { font-size:15px; }
   .logo-circle { width:58px; height:58px; }
@@ -244,6 +274,7 @@ input[type="file"] { display:none; }
   main { padding:16px 10px; }
   .member-grid { grid-template-columns:repeat(auto-fill,minmax(135px,1fr)); }
   .dashboard-charts { grid-template-columns:1fr; }
+  .media-gallery-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); }
 }
 </style>
 </head>
@@ -306,14 +337,13 @@ input[type="file"] { display:none; }
   </div>
 </div>
 
-<!-- HEALTH MEMBER MODAL (ปรับปรุงใหม่) -->
+<!-- HEALTH MEMBER MODAL -->
 <div class="modal-overlay" id="addHealthModal">
   <div class="modal" style="max-width:640px;">
     <button class="modal-close" onclick="closeModal('addHealthModal')">×</button>
     <h2>👤 เพิ่ม/แก้ไขข้อมูลสมาชิกที่ดูแล</h2>
     <input type="hidden" id="editHealthId">
 
-    <!-- ข้อมูลพื้นฐาน -->
     <div class="section-box">
       <div class="section-box-title">📋 ข้อมูลพื้นฐาน</div>
       <div class="form-row">
@@ -322,10 +352,10 @@ input[type="file"] { display:none; }
       </div>
       <div class="form-row">
         <div class="form-group"><label>เลขบัตรประชาชน</label><input id="hIdCard" placeholder="13 หลัก" maxlength="13" oninput="this.value=this.value.replace(/\D/g,'')"></div>
-        <div class="form-group"><label>บ้านเลขที่</label><input id="hAddress" placeholder="เช่น 12/3"></div>
+        <div class="form-group"><label>เบอร์โทร</label><input id="hPhone" placeholder="0XX-XXX-XXXX"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>เบอร์โทรศัพท์</label><input id="hPhone" placeholder="08x-xxx-xxxx"></div>
+        <div class="form-group"><label>บ้านเลขที่</label><input id="hAddress" placeholder="เช่น 123/4"></div>
         <div class="form-group"><label>เพศ</label>
           <select id="hGender">
             <option value="">-- เลือก --</option>
@@ -353,7 +383,6 @@ input[type="file"] { display:none; }
       </div>
     </div>
 
-    <!-- ข้อมูลสุขภาพ -->
     <div class="section-box">
       <div class="section-box-title">💊 ข้อมูลสุขภาพ</div>
       <div class="form-row">
@@ -379,7 +408,6 @@ input[type="file"] { display:none; }
           </div>
         </div>
       </div>
-      <!-- ความดันโลหิต SYS / DIA / PUL -->
       <div style="background:var(--green-pale);border-radius:8px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--green-light);">
         <div style="font-size:13px;font-weight:600;color:var(--green-dark);margin-bottom:12px;">💓 วัดความดันโลหิต</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
@@ -407,7 +435,6 @@ input[type="file"] { display:none; }
       </div>
     </div>
 
-    <!-- โรคประจำตัว -->
     <div class="section-box">
       <div class="section-box-title">🏥 โรคประจำตัว (เลือกได้หลายรายการ)</div>
       <div class="disease-grid" id="diseaseGrid">
@@ -429,12 +456,10 @@ input[type="file"] { display:none; }
       <div id="diseaseOtherField" style="display:none;margin-top:10px;">
         <input id="hDiseaseOther" placeholder="ระบุโรคอื่นๆ..." style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;">
       </div>
-      <!-- หมายเหตุ -->
       <div style="margin-top:12px;">
         <label style="font-size:12px;font-weight:600;color:var(--text-sub);display:block;margin-bottom:4px;">📝 หมายเหตุ / บันทึกเพิ่มเติม</label>
         <textarea id="hDiseaseNote" rows="2" placeholder="บันทึกข้อมูลเพิ่มเติม เช่น ประวัติการรักษา ยาที่ใช้ หรือข้อสังเกตอื่นๆ..." style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;resize:vertical;"></textarea>
       </div>
-      <!-- ประเภทความพิการ -->
       <div id="disabilityFields" style="display:none;margin-top:12px;background:#fff3e0;border-radius:8px;padding:12px 14px;border:1px solid #ffcc02;">
         <div style="font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px;">♿ ประเภทความพิการ</div>
         <select id="hDisabilityType" style="width:100%;padding:8px 10px;border:1.5px solid #ffcc02;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;">
@@ -449,7 +474,6 @@ input[type="file"] { display:none; }
       </div>
     </div>
 
-    <!-- รูปภาพ -->
     <div class="section-box">
       <div class="section-box-title">📷 รูปภาพสมาชิก</div>
       <div style="display:flex;align-items:center;gap:12px;">
@@ -514,45 +538,80 @@ input[type="file"] { display:none; }
   </div>
 </div>
 
-<!-- ACTIVITY POST ADD MODAL -->
+<!-- ============================================================ -->
+<!-- ACTIVITY POST ADD/EDIT MODAL (ปรับใหม่: หลายรูป/วีดีโอ) -->
+<!-- ============================================================ -->
 <div class="modal-overlay" id="addActPostModal">
-  <div class="modal">
+  <div class="modal" style="max-width:620px;">
     <button class="modal-close" onclick="closeModal('addActPostModal')">×</button>
-    <h2 id="actPostModalTitle">📸 เพิ่มกิจกรรม</h2>
+    <h2 id="actPostModalTitle">📸 เพิ่มข่าวสาร/กิจกรรม</h2>
     <input type="hidden" id="editActPostId">
-    <div class="form-group"><label>หัวข้อกิจกรรม</label><input id="apTitle" placeholder="หัวข้อกิจกรรม"></div>
-    <div class="form-group mt-4"><label>วันที่จัดกิจกรรม</label><input type="date" id="apDate"></div>
-    <div class="form-group mt-4"><label>รายละเอียด</label>
-      <textarea id="apDesc" rows="3" style="width:100%;border:1.5px solid #dde8e1;border-radius:8px;padding:8px;font-family:Sarabun,sans-serif;font-size:13px;" placeholder="รายละเอียดกิจกรรม..."></textarea>
+
+    <div class="form-group">
+      <label>หัวข้อกิจกรรม <span style="color:red">*</span></label>
+      <input id="apTitle" placeholder="หัวข้อกิจกรรม/ข่าวสาร">
     </div>
     <div class="form-group mt-4">
-      <label>ประเภทสื่อ</label>
-      <select id="apMediaType" onchange="toggleMediaInput()">
-        <option value="none">ไม่มีรูป/วีดีโอ</option>
-        <option value="image">รูปภาพ</option>
-        <option value="youtube">วีดีโอ YouTube</option>
-      </select>
+      <label>วันที่จัดกิจกรรม</label>
+      <input type="date" id="apDate">
     </div>
-    <div id="apImageGroup" class="form-group mt-4" style="display:none;">
-      <label>อัปโหลดรูปภาพ</label>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
-        <img id="apPhotoPreview" src="" style="width:80px;height:80px;border-radius:8px;object-fit:cover;border:2px solid var(--green-light);background:var(--green-pale);display:none;">
-        <label class="btn-primary photo-upload-label" style="font-size:13px;padding:7px 16px;">📷 เลือกรูป<input type="file" accept="image/*" id="apPhotoFile" onchange="previewActPhoto(event)"></label>
-      </div>
+    <div class="form-group mt-4">
+      <label>รายละเอียด</label>
+      <textarea id="apDesc" rows="3" style="width:100%;border:1.5px solid #dde8e1;border-radius:8px;padding:8px;font-family:Sarabun,sans-serif;font-size:13px;" placeholder="รายละเอียดกิจกรรม..."></textarea>
     </div>
-    <div id="apYoutubeGroup" class="form-group mt-4" style="display:none;">
-      <label>ลิงก์ YouTube</label>
+
+    <!-- Multiple media upload -->
+    <div class="form-group mt-4">
+      <label style="font-weight:600;color:var(--green-dark);">📷 รูปภาพ / วีดีโอ (เลือกได้หลายไฟล์พร้อมกัน)</label>
+      <div style="font-size:11px;color:var(--gray-mid);margin-bottom:6px;">รองรับ JPG, PNG, GIF, MP4, WebM — คลิก "×" เพื่อลบแต่ละไฟล์</div>
+      <div id="apMediaPreviews" class="ap-media-grid"></div>
+      <label class="ap-upload-label">
+        ➕ เพิ่มรูป/วีดีโอ
+        <input type="file" id="apMediaFiles" accept="image/*,video/mp4,video/webm,video/ogg" multiple onchange="addMediaFiles(event)">
+      </label>
+    </div>
+
+    <!-- YouTube URL (optional) -->
+    <div class="form-group mt-4">
+      <label>🎬 ลิงก์ YouTube (ไม่บังคับ)</label>
       <input id="apYoutubeUrl" placeholder="https://www.youtube.com/watch?v=...">
     </div>
-    <button class="btn-primary mt-4 w-full" onclick="saveActivityPost()">💾 บันทึกกิจกรรม</button>
+
+    <div style="margin-top:8px;background:#fffde7;border-radius:8px;padding:10px 12px;font-size:12px;color:#7a5500;border:1px solid #ffe082;">
+      💡 <strong>หมายเหตุ:</strong> ระบบจะอัปโหลดไฟล์ไปที่ Supabase Storage (bucket: <code>activity-media</code>) หากยังไม่ได้สร้าง bucket กรุณาสร้างใน Supabase → Storage และตั้งเป็น Public
+    </div>
+
+    <button class="btn-primary mt-4 w-full" onclick="saveActivityPost()" id="apSaveBtn">💾 บันทึกกิจกรรม</button>
   </div>
 </div>
 
-<!-- ACTIVITY POST VIEW MODAL -->
+<!-- ACTIVITY POST VIEW MODAL (ปรับใหม่: แสดงหลายสื่อ + เช็คชื่อ) -->
 <div class="modal-overlay" id="viewActPostModal">
-  <div class="modal" style="max-width:680px;">
+  <div class="modal" style="max-width:720px;">
     <button class="modal-close" onclick="closeModal('viewActPostModal')">×</button>
     <div id="viewActPostContent"></div>
+    <div id="viewActAttendance"></div>
+  </div>
+</div>
+
+<!-- ATTENDANCE MODAL (เช็คชื่อ อสม.) -->
+<div class="modal-overlay" id="attendanceModal">
+  <div class="modal" style="max-width:540px;">
+    <button class="modal-close" onclick="closeModal('attendanceModal')">×</button>
+    <h2>✅ เช็คชื่อผู้เข้าร่วมกิจกรรม</h2>
+    <input type="hidden" id="attActivityId">
+
+    <div class="att-info-box" id="attActivityInfo"></div>
+
+    <div class="form-group">
+      <label>เลือก อสม. ที่เข้าร่วม</label>
+      <select id="attMember" style="width:100%;padding:9px 10px;border:1.5px solid #dde8e1;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;">
+        <option value="">-- เลือก อสม. --</option>
+      </select>
+    </div>
+    <button class="btn-primary mt-4 w-full" onclick="saveAttendance()">✅ เช็คชื่อเข้าร่วม</button>
+
+    <div id="attModalList"></div>
   </div>
 </div>
 
@@ -590,6 +649,10 @@ let loggedInAsom = null;
 let editingEventId = null;
 let editingActPostId = null;
 let dashboardCharts = {};
+let currentViewPostId = null;
+
+// State สำหรับ multi-media upload
+let pendingMediaItems = []; // { type:'image'|'video', dataUrl:string, file:File|null, storedUrl:string|null }
 
 let villageInfo = {
   title: 'กลุ่มอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)',
@@ -640,7 +703,7 @@ function calcAgeFromBirth() {
   if (!ageEl) return;
 
   const day  = parseInt(dayEl?.value)  || 0;
-  const mon  = parseInt(monEl?.value)  || 0;  // 1-12
+  const mon  = parseInt(monEl?.value)  || 0;
   const beYear = parseInt(yearEl?.value) || 0;
 
   if (!beYear || beYear < 2400) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
@@ -672,7 +735,6 @@ function calcAgeFromBirth() {
   }
 }
 
-// แปลง วัน/เดือน/ปี พ.ศ. → ISO string (YYYY-MM-DD) สำหรับเก็บ
 function getBirthDateISO() {
   const day    = parseInt(document.getElementById('hBirthDay')?.value)  || 0;
   const mon    = parseInt(document.getElementById('hBirthMonth')?.value) || 0;
@@ -684,7 +746,6 @@ function getBirthDateISO() {
   return `${ceYear}-${mm}-${dd}`;
 }
 
-// แปลง ISO → วัน/เดือน/ปี พ.ศ. แล้ว fill ลงฟอร์ม
 function setBirthDateFromISO(iso) {
   if (!iso) return;
   const parts = iso.split('-');
@@ -710,7 +771,6 @@ function updateBPStatus() {
 
   if (!sys && !dia) { msg.innerHTML = ''; return; }
 
-  // BP classification (อ้างอิง AHA/WHO)
   let bpClass = '', bpColor = '', bpBg = '', bpIcon = '';
   if (sys < 90 || dia < 60) {
     bpClass='ความดันต่ำ'; bpColor='#1565c0'; bpBg='#e3f2fd'; bpIcon='⬇️';
@@ -726,7 +786,6 @@ function updateBPStatus() {
     bpClass='ปกติ'; bpColor='#1b5e20'; bpBg='#e8f5e9'; bpIcon='✅';
   }
 
-  // Pulse check
   let pulMsg = '';
   if (pul) {
     if (pul < 60) pulMsg = ' | ชีพจรช้า (<60)';
@@ -824,6 +883,58 @@ async function resizeImage(file, maxWidth, quality) {
   });
 }
 
+async function compressImageToBlob(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ratio = Math.min(maxWidth/img.width, maxWidth/img.height);
+        const w = img.width * (ratio<1?ratio:1);
+        const h = img.height * (ratio<1?ratio:1);
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality||0.82);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// อัปโหลดไฟล์ไปที่ Supabase Storage และคืน public URL
+// ถ้า Storage ไม่พร้อม จะ fallback เป็น base64
+async function uploadMediaToStorage(file) {
+  try {
+    const ext = file.type.startsWith('video/') ? (file.name.split('.').pop() || 'mp4') : 'jpg';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,6)}.${ext}`;
+    let uploadFile = file;
+    if (file.type.startsWith('image/')) {
+      const blob = await compressImageToBlob(file, 1200, 0.85);
+      if (blob) uploadFile = new File([blob], fileName, { type: 'image/jpeg' });
+    }
+    const { data, error } = await db.storage.from('activity-media').upload(fileName, uploadFile, {
+      cacheControl: '3600',
+      upsert: false
+    });
+    if (error) throw error;
+    const { data: urlData } = db.storage.from('activity-media').getPublicUrl(data.path);
+    return { url: urlData.publicUrl, isStorage: true };
+  } catch(storageErr) {
+    console.warn('Supabase Storage upload failed, falling back to base64:', storageErr);
+    try {
+      if (file.type.startsWith('image/')) {
+        const b64 = await resizeImage(file, 900, 0.78);
+        return { url: b64, isStorage: false };
+      }
+    } catch(e2) {}
+    return null;
+  }
+}
+
 function getYoutubeId(url) {
   if (!url) return '';
   const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^?&\s]+)/);
@@ -850,7 +961,7 @@ function applyVillageInfoToHeader() {
 // ============================================================
 // DATABASE FUNCTIONS
 // ============================================================
-function dbErr(op, err) { console.error(`DB error (${op}):`, err); showToast(`❌ ${op} ล้มเหลว`); }
+function dbErr(op, err) { console.error(`DB error (${op}):`, err); showToast(`❌ ${op} ล้มเหลว: ${err?.message||err}`); }
 
 async function dbGetMembers() {
   const { data, error } = await db.from('members').select('*').order('id');
@@ -933,15 +1044,161 @@ async function dbDeleteActOrder(id) {
 }
 
 // ============================================================
-// HEALTH MEMBERS DB (อัปเดตเพื่อรองรับฟิลด์ใหม่)
+// ACTIVITY POSTS DB (ปรับใหม่: รองรับ media_urls หลายรายการ)
+// ============================================================
+async function dbGetActivityPosts() {
+  const { data, error } = await db.from('activity_posts').select('*').order('date', { ascending: false });
+  if (error) { console.warn('activity_posts not found:', error.message); return []; }
+  return data.map(p => {
+    // รองรับทั้ง schema เก่า (media_url) และใหม่ (media_urls array)
+    let mediaUrls = [];
+    if (p.media_urls && Array.isArray(p.media_urls) && p.media_urls.length > 0) {
+      mediaUrls = p.media_urls;
+    } else if (p.media_url && p.media_type === 'image') {
+      mediaUrls = [p.media_url];
+    }
+    return {
+      id: p.id,
+      title: p.title || '',
+      description: p.description || '',
+      date: p.date || '',
+      mediaType: p.media_type || 'none',
+      mediaUrl: p.media_url || '',
+      mediaUrls: mediaUrls,
+      youtubeUrl: p.youtube_url || (p.media_type === 'youtube' ? p.media_url : '') || '',
+      createdAt: p.created_at || ''
+    };
+  });
+}
+
+async function dbAddActivityPost({ title, description, date, mediaUrls, youtubeUrl }) {
+  const hasMedia = mediaUrls && mediaUrls.length > 0;
+  const mediaType = youtubeUrl ? 'youtube' : (hasMedia ? 'image' : 'none');
+  const primaryUrl = hasMedia ? mediaUrls[0] : '';
+
+  // สร้าง payload — ลอง insert โดยรวม media_urls ก่อน
+  const payload = {
+    title,
+    description,
+    date: date || null,
+    media_type: mediaType,
+    media_url: youtubeUrl || primaryUrl || '',
+    youtube_url: youtubeUrl || null,
+    media_urls: mediaUrls || []
+  };
+
+  let { data, error } = await db.from('activity_posts').insert(payload).select().single();
+
+  // ถ้า error เพราะ column media_urls ไม่มี → ลอง insert โดยไม่มี media_urls
+  if (error && (error.message || '').includes('media_urls')) {
+    const payload2 = { title, description, date: date || null, media_type: mediaType, media_url: youtubeUrl || primaryUrl || '' };
+    const r2 = await db.from('activity_posts').insert(payload2).select().single();
+    if (r2.error) { dbErr('เพิ่มกิจกรรม', r2.error); return null; }
+    return r2.data.id;
+  }
+
+  if (error) { dbErr('เพิ่มกิจกรรม', error); return null; }
+  return data.id;
+}
+
+async function dbUpdateActivityPost(id, { title, description, date, mediaUrls, youtubeUrl }) {
+  const hasMedia = mediaUrls && mediaUrls.length > 0;
+  const mediaType = youtubeUrl ? 'youtube' : (hasMedia ? 'image' : 'none');
+  const primaryUrl = hasMedia ? mediaUrls[0] : '';
+
+  const payload = {
+    title,
+    description,
+    date: date || null,
+    media_type: mediaType,
+    media_url: youtubeUrl || primaryUrl || '',
+    youtube_url: youtubeUrl || null,
+    media_urls: mediaUrls || []
+  };
+
+  let { error } = await db.from('activity_posts').update(payload).eq('id', id);
+
+  if (error && (error.message || '').includes('media_urls')) {
+    const payload2 = { title, description, date: date || null, media_type: mediaType, media_url: youtubeUrl || primaryUrl || '' };
+    const r2 = await db.from('activity_posts').update(payload2).eq('id', id);
+    if (r2.error) { dbErr('แก้ไขกิจกรรม', r2.error); return false; }
+    return true;
+  }
+
+  if (error) { dbErr('แก้ไขกิจกรรม', error); return false; }
+  return true;
+}
+
+async function dbDeleteActivityPost(id) {
+  const { error } = await db.from('activity_posts').delete().eq('id', id);
+  if (error) { dbErr('ลบกิจกรรม', error); return false; }
+  return true;
+}
+
+// ============================================================
+// ATTENDANCE DB (เช็คชื่อ อสม.)
+// SQL สำหรับสร้างตาราง (รันใน Supabase SQL Editor):
+/*
+CREATE TABLE IF NOT EXISTS activity_attendance (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  activity_post_id BIGINT,
+  activity_name TEXT DEFAULT '',
+  date DATE,
+  asom_member_id BIGINT,
+  asom_name TEXT DEFAULT '',
+  checked_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE activity_attendance ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON activity_attendance FOR ALL USING (true) WITH CHECK (true);
+
+-- เพิ่ม columns ให้ activity_posts (ถ้ายังไม่มี):
+ALTER TABLE activity_posts ADD COLUMN IF NOT EXISTS media_urls JSONB DEFAULT '[]';
+ALTER TABLE activity_posts ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+*/
+// ============================================================
+async function dbGetAttendance(activityPostId) {
+  const { data, error } = await db.from('activity_attendance')
+    .select('*')
+    .eq('activity_post_id', activityPostId)
+    .order('checked_at');
+  if (error) { console.warn('activity_attendance:', error.message); return []; }
+  return (data || []).map(a => ({
+    id: a.id,
+    activityPostId: a.activity_post_id,
+    activityName: a.activity_name || '',
+    date: a.date || '',
+    asomId: a.asom_member_id,
+    asomName: a.asom_name || '',
+    checkedAt: a.checked_at || ''
+  }));
+}
+
+async function dbAddAttendance({ activityPostId, activityName, date, asomId, asomName }) {
+  const { data, error } = await db.from('activity_attendance').insert({
+    activity_post_id: activityPostId,
+    activity_name: activityName,
+    date: date || null,
+    asom_member_id: asomId,
+    asom_name: asomName
+  }).select().single();
+  if (error) { dbErr('เช็คชื่อ', error); return null; }
+  return data.id;
+}
+
+async function dbDeleteAttendance(id) {
+  const { error } = await db.from('activity_attendance').delete().eq('id', id);
+  if (error) { dbErr('ลบการเช็คชื่อ', error); return false; }
+  return true;
+}
+
+// ============================================================
+// HEALTH MEMBERS DB
 // ============================================================
 function mapHealthRow(h) {
-  // รองรับทั้ง schema เก่าและใหม่
   let diseases = [];
   if (Array.isArray(h.diseases)) diseases = h.diseases;
   else if (h.disease) diseases = [h.disease];
 
-  // คำนวณอายุจาก birth_date
   let age = h.age || null;
   if (!age && h.birth_date) {
     const birth = new Date(h.birth_date);
@@ -972,7 +1229,6 @@ function mapHealthRow(h) {
     height: h.height,
     weight: h.weight,
     bmi: h.bmi,
-    // ความดัน (SYS/DIA/PUL เก็บใน blood_pressure_1 รูปแบบ "120/80/72")
     bp1: h.blood_pressure_1 || '',
     bp2: '',
     bp3: '',
@@ -1001,7 +1257,6 @@ async function dbGetAllHealth() {
 }
 
 async function dbAddHealth(d) {
-  const today = new Date().toISOString().split('T')[0];
   const insertData = {
     asom_id: d.asomId,
     first_name: d.firstName,
@@ -1098,27 +1353,6 @@ async function dbUpdateSetting(key, value) {
   return true;
 }
 
-async function dbGetActivityPosts() {
-  const { data, error } = await db.from('activity_posts').select('*').order('date', { ascending: false });
-  if (error) { console.warn('activity_posts not found'); return []; }
-  return data.map(p => ({ id: p.id, title: p.title || '', description: p.description || '', date: p.date || '', mediaType: p.media_type || 'none', mediaUrl: p.media_url || '', createdAt: p.created_at || '' }));
-}
-async function dbAddActivityPost({ title, description, date, mediaType, mediaUrl }) {
-  const { data, error } = await db.from('activity_posts').insert({ title, description, date, media_type: mediaType, media_url: mediaUrl }).select().single();
-  if (error) { dbErr('เพิ่มกิจกรรม', error); return null; }
-  return data.id;
-}
-async function dbUpdateActivityPost(id, { title, description, date, mediaType, mediaUrl }) {
-  const { error } = await db.from('activity_posts').update({ title, description, date, media_type: mediaType, media_url: mediaUrl }).eq('id', id);
-  if (error) { dbErr('แก้ไขกิจกรรม', error); return false; }
-  return true;
-}
-async function dbDeleteActivityPost(id) {
-  const { error } = await db.from('activity_posts').delete().eq('id', id);
-  if (error) { dbErr('ลบกิจกรรม', error); return false; }
-  return true;
-}
-
 // ============================================================
 // INIT
 // ============================================================
@@ -1193,7 +1427,6 @@ function showPage(page) {
 
 function render() {
   const el = document.getElementById('mainContent');
-  // ทำลาย charts เก่าก่อน
   Object.values(dashboardCharts).forEach(c => { try { c.destroy(); } catch(e){} });
   dashboardCharts = {};
 
@@ -1239,11 +1472,12 @@ function renderHome() {
 
   const latestPosts = activityPosts.slice(0, 8);
   const postThumbs = latestPosts.length ? latestPosts.map(p => {
+    const thumbUrl = p.mediaUrls && p.mediaUrls.length > 0 ? p.mediaUrls[0] : p.mediaUrl;
     let mediaBox = '';
-    if (p.mediaType === 'image' && p.mediaUrl) {
-      mediaBox = `<div class="act-post-img-box"><img src="${p.mediaUrl}" onerror="this.parentNode.innerHTML='<span class=video-icon>🖼️</span>'"></div>`;
-    } else if (p.mediaType === 'youtube') {
-      const ytId = getYoutubeId(p.mediaUrl||'');
+    if (thumbUrl && (p.mediaType === 'image' || (p.mediaUrls && p.mediaUrls.length > 0))) {
+      mediaBox = `<div class="act-post-img-box"><img src="${thumbUrl}" onerror="this.parentNode.innerHTML='<span class=video-icon>🖼️</span>'"></div>`;
+    } else if (p.youtubeUrl || p.mediaType === 'youtube') {
+      const ytId = getYoutubeId(p.youtubeUrl || p.mediaUrl || '');
       mediaBox = ytId
         ? `<div class="act-post-img-box" style="position:relative;overflow:hidden;"><img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;"></div>`
         : `<div class="act-post-img-box"><span class="video-icon">▶️</span></div>`;
@@ -1550,107 +1784,361 @@ async function deleteActOrder(id) {
 }
 
 // ============================================================
-// ACTIVITY POSTS
+// ACTIVITY POSTS (ข่าวสาร/กิจกรรม) — ปรับปรุงใหม่
 // ============================================================
 function renderActivityPosts() {
   const cards = activityPosts.map(p => {
+    // เลือก thumbnail: ให้ใช้ mediaUrls[0] หรือ mediaUrl
+    const thumbUrl = (p.mediaUrls && p.mediaUrls.length > 0) ? p.mediaUrls[0] : p.mediaUrl;
+    const hasMultiple = p.mediaUrls && p.mediaUrls.length > 1;
+    const youtubeUrl = p.youtubeUrl || (p.mediaType === 'youtube' ? p.mediaUrl : '');
+
     let thumbHtml = '';
-    if (p.mediaType==='image'&&p.mediaUrl) {
-      thumbHtml = `<div class="yt-thumbnail"><img src="${p.mediaUrl}" alt="${p.title}" onerror="this.parentNode.innerHTML='<div class=yt-no-image><span style=font-size:36px>🖼️</span></div>'"><div class="yt-play-overlay"><div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div><span class="yt-badge-image">รูปภาพ</span></div>`;
-    } else if (p.mediaType==='youtube') {
-      const ytId = getYoutubeId(p.mediaUrl);
-      const thumbUrl = ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
-      thumbHtml = `<div class="yt-thumbnail">${thumbUrl?`<img src="${thumbUrl}">`:'<div class="yt-no-image" style="position:absolute;inset:0;"><span style="font-size:36px">▶️</span></div>'}<div class="yt-play-overlay" style="opacity:1;background:rgba(0,0,0,.18);"><div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div><span class="yt-badge-video">▶ VIDEO</span></div>`;
+    if (youtubeUrl) {
+      const ytId = getYoutubeId(youtubeUrl);
+      const ytThumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : '';
+      thumbHtml = `<div class="yt-thumbnail">${ytThumb?`<img src="${ytThumb}">`:'<div class="yt-no-image" style="position:absolute;inset:0;"><span style="font-size:36px">▶️</span></div>'}<div class="yt-play-overlay" style="opacity:1;background:rgba(0,0,0,.18);"><div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div><span class="yt-badge-video">▶ VIDEO</span></div>`;
+    } else if (thumbUrl) {
+      const isVideo = thumbUrl.match(/\.(mp4|webm|ogg)(\?|$)/i);
+      if (isVideo) {
+        thumbHtml = `<div class="yt-thumbnail" style="background:#111;"><video src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover;" muted></video><div class="yt-play-overlay"><div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div><span class="yt-badge-video">วีดีโอ</span>${hasMultiple?`<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:white;border-radius:4px;font-size:10px;padding:2px 6px;">+${p.mediaUrls.length} ไฟล์</span>`:''}</div>`;
+      } else {
+        thumbHtml = `<div class="yt-thumbnail"><img src="${thumbUrl}" alt="${p.title}" onerror="this.parentNode.innerHTML='<div class=yt-no-image style=position:absolute;inset:0><span style=font-size:36px>🖼️</span></div>'"><div class="yt-play-overlay"><div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div><span class="yt-badge-image">${hasMultiple?`📷 ${p.mediaUrls.length} รูป`:'รูปภาพ'}</span></div>`;
+      }
     } else {
       thumbHtml = `<div class="yt-thumbnail"><div class="yt-no-image" style="position:absolute;inset:0;"><span style="font-size:36px">📋</span></div></div>`;
     }
+
     const adminBtns = isAdmin ? `<div style="display:flex;gap:6px;margin-top:8px;padding:0 14px 12px;" onclick="event.stopPropagation()"><button class="btn-edit" style="font-size:11px;padding:4px 12px;flex:1;" onclick="editActPost(${p.id})">✏️ แก้ไข</button><button class="btn-danger" style="font-size:11px;padding:4px 12px;flex:1;" onclick="deleteActPost(${p.id})">🗑️ ลบ</button></div>` : '';
+
     return `<div class="yt-card" onclick="viewActivityPost(${p.id})">${thumbHtml}<div class="yt-info"><div class="yt-avatar">🌿</div><div class="yt-text"><div class="yt-title">${p.title}</div>${p.description?`<div class="yt-desc-preview">${p.description}</div>`:''}<div class="yt-meta"><span>📅 ${formatThaiDate(p.date)}</span></div></div></div>${adminBtns}</div>`;
-  }).join('')||`<div style="text-align:center;padding:80px 20px;grid-column:1/-1;"><div style="font-size:64px;margin-bottom:16px;opacity:.4;">📺</div><p style="color:var(--gray-mid);font-size:16px;">ยังไม่มีข่าวสาร/กิจกรรม</p></div>`;
+  }).join('') || `<div style="text-align:center;padding:80px 20px;grid-column:1/-1;"><div style="font-size:64px;margin-bottom:16px;opacity:.4;">📺</div><p style="color:var(--gray-mid);font-size:16px;">ยังไม่มีข่าวสาร/กิจกรรม</p></div>`;
+
   const adminZone = isAdmin
-    ? `<div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;"><span style="background:var(--gold);color:white;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;">🔑 โหมดแอดมิน</span><button class="btn-primary" style="margin-left:auto;background:#e53e3e;" onclick="openAddActPostModal()">➕ เพิ่มข่าวสาร</button></div>`
+    ? `<div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;"><span style="background:var(--gold);color:white;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;">🔑 โหมดแอดมิน</span><button class="btn-primary" style="margin-left:auto;" onclick="openAddActPostModal()">➕ เพิ่มข่าวสาร/กิจกรรม</button></div>`
     : `<div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button onclick="toggleAdmin()" style="background:none;border:1.5px solid var(--green-mid);border-radius:8px;padding:6px 14px;cursor:pointer;font-family:Sarabun,sans-serif;font-size:13px;color:var(--green-dark);">🔑 โหมดแอดมิน</button></div>`;
+
   return `<p class="section-title">📰 ข่าวสาร / กิจกรรม</p><p class="section-sub">${activityPosts.length} รายการ</p>${adminZone}<div class="yt-grid">${cards}</div>`;
+}
+
+// --- MULTI MEDIA UPLOAD FUNCTIONS ---
+
+function addMediaFiles(event) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  files.forEach(file => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        pendingMediaItems.push({ type: 'image', dataUrl: e.target.result, file, storedUrl: null });
+        renderMediaPreviews();
+      };
+      reader.readAsDataURL(file);
+    } else if (file.type.startsWith('video/')) {
+      const blobUrl = URL.createObjectURL(file);
+      pendingMediaItems.push({ type: 'video', dataUrl: blobUrl, file, storedUrl: null });
+      renderMediaPreviews();
+    }
+  });
+  event.target.value = '';
+}
+
+function removeMedia(idx) {
+  if (pendingMediaItems[idx] && pendingMediaItems[idx].dataUrl && pendingMediaItems[idx].dataUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(pendingMediaItems[idx].dataUrl);
+  }
+  pendingMediaItems.splice(idx, 1);
+  renderMediaPreviews();
+}
+
+function renderMediaPreviews() {
+  const container = document.getElementById('apMediaPreviews');
+  if (!container) return;
+  if (pendingMediaItems.length === 0) { container.innerHTML = ''; return; }
+  container.innerHTML = pendingMediaItems.map((m, i) => {
+    const preview = m.type === 'video'
+      ? `<video src="${m.dataUrl}" style="width:100%;height:100%;object-fit:cover;" muted></video><span class="ap-vid-icon">▶ วีดีโอ</span>`
+      : `<img src="${m.dataUrl}" alt="preview ${i+1}">`;
+    const storedBadge = m.storedUrl ? `<span style="position:absolute;bottom:4px;left:4px;background:rgba(26,92,56,.8);color:white;border-radius:4px;font-size:9px;padding:1px 4px;">✓ URL</span>` : '';
+    return `<div class="ap-media-thumb">
+      ${preview}${storedBadge}
+      <button class="ap-remove-btn" onclick="removeMedia(${i})" title="ลบ">×</button>
+    </div>`;
+  }).join('');
 }
 
 function openAddActPostModal() {
   editingActPostId = null;
-  document.getElementById('actPostModalTitle').textContent = '📸 เพิ่มกิจกรรม';
+  pendingMediaItems = [];
+  document.getElementById('actPostModalTitle').textContent = '📸 เพิ่มข่าวสาร/กิจกรรม';
   document.getElementById('editActPostId').value = '';
   document.getElementById('apTitle').value = '';
   document.getElementById('apDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('apDesc').value = '';
-  document.getElementById('apMediaType').value = 'none';
   document.getElementById('apYoutubeUrl').value = '';
-  document.getElementById('apPhotoPreview').style.display = 'none';
-  toggleMediaInput();
+  renderMediaPreviews();
   openModal('addActPostModal');
 }
+
 function editActPost(id) {
-  const p = activityPosts.find(x=>x.id===id); if(!p) return;
+  const p = activityPosts.find(x => x.id === id); if (!p) return;
   editingActPostId = id;
+  pendingMediaItems = [];
+
+  // โหลดรูปที่มีอยู่แล้วเป็น stored URL entries
+  const existingUrls = (p.mediaUrls && p.mediaUrls.length > 0) ? p.mediaUrls
+    : (p.mediaUrl && p.mediaType === 'image' ? [p.mediaUrl] : []);
+
+  existingUrls.forEach(url => {
+    const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+    pendingMediaItems.push({ type: isVideo ? 'video' : 'image', dataUrl: url, file: null, storedUrl: url });
+  });
+
   document.getElementById('actPostModalTitle').textContent = '✏️ แก้ไขกิจกรรม';
   document.getElementById('editActPostId').value = id;
   document.getElementById('apTitle').value = p.title;
   document.getElementById('apDate').value = p.date;
   document.getElementById('apDesc').value = p.description;
-  document.getElementById('apMediaType').value = p.mediaType;
-  if (p.mediaType==='image'&&p.mediaUrl) { document.getElementById('apPhotoPreview').src=p.mediaUrl; document.getElementById('apPhotoPreview').style.display='block'; }
-  else document.getElementById('apPhotoPreview').style.display='none';
-  if (p.mediaType==='youtube') document.getElementById('apYoutubeUrl').value=p.mediaUrl;
-  toggleMediaInput();
+  document.getElementById('apYoutubeUrl').value = p.youtubeUrl || (p.mediaType === 'youtube' ? p.mediaUrl : '') || '';
+  renderMediaPreviews();
   openModal('addActPostModal');
 }
-function toggleMediaInput() {
-  const mt = document.getElementById('apMediaType').value;
-  document.getElementById('apImageGroup').style.display = mt==='image'?'block':'none';
-  document.getElementById('apYoutubeGroup').style.display = mt==='youtube'?'block':'none';
-}
-function previewActPhoto(e) {
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => { document.getElementById('apPhotoPreview').src=ev.target.result; document.getElementById('apPhotoPreview').style.display='block'; };
-  reader.readAsDataURL(file);
-}
+
 async function saveActivityPost() {
   const title = document.getElementById('apTitle').value.trim();
   if (!title) { alert('กรุณาใส่หัวข้อกิจกรรม'); return; }
-  const mt = document.getElementById('apMediaType').value;
-  let mediaUrl = '';
-  if (mt==='image') {
-    const fileEl = document.getElementById('apPhotoFile');
-    if (fileEl?.files[0]) { showToast('⏳ ประมวลผลรูป...'); try { mediaUrl = await resizeImage(fileEl.files[0], 1200, 0.85); } catch(e) { showToast('❌ โหลดรูปไม่สำเร็จ'); return; } }
-    else { const preview = document.getElementById('apPhotoPreview'); if(preview.src&&preview.src!==window.location.href) mediaUrl=preview.src; }
-  } else if (mt==='youtube') { mediaUrl = getYoutubeEmbedUrl(document.getElementById('apYoutubeUrl').value.trim()); }
-  const payload = { title, description: document.getElementById('apDesc').value, date: document.getElementById('apDate').value, mediaType: mt, mediaUrl };
-  showToast('⏳ กำลังบันทึก...');
+
+  const date = document.getElementById('apDate').value;
+  const desc = document.getElementById('apDesc').value;
+  const rawYt = document.getElementById('apYoutubeUrl').value.trim();
+  const youtubeUrl = rawYt ? getYoutubeEmbedUrl(rawYt) : '';
+
+  // ปิดปุ่มระหว่างบันทึก
+  const btn = document.getElementById('apSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังอัปโหลด...'; }
+
+  // อัปโหลดไฟล์ใหม่ (file != null) ไปที่ Supabase Storage
+  const finalUrls = [];
+  for (const item of pendingMediaItems) {
+    if (item.storedUrl) {
+      // ไฟล์ที่เก็บแล้ว (จาก edit) — ใช้ URL เดิม
+      finalUrls.push(item.storedUrl);
+    } else if (item.file) {
+      showToast(`⏳ กำลังอัปโหลด ${item.file.name}...`);
+      const result = await uploadMediaToStorage(item.file);
+      if (result && result.url) {
+        finalUrls.push(result.url);
+        if (!result.isStorage) {
+          showToast('⚠️ Storage ไม่พร้อม — บันทึกเป็น base64 แทน');
+        }
+      } else {
+        showToast(`⚠️ ข้ามไฟล์ ${item.file.name} (อัปโหลดไม่สำเร็จ)`);
+      }
+    }
+  }
+
+  const payload = { title, description: desc, date, mediaUrls: finalUrls, youtubeUrl };
+  showToast('⏳ กำลังบันทึกข้อมูล...');
+
   const editId = document.getElementById('editActPostId').value;
+  let success = false;
   if (editId) {
     const ok = await dbUpdateActivityPost(Number(editId), payload);
-    if (ok) { const i=activityPosts.findIndex(x=>x.id===Number(editId)); if(i>=0) activityPosts[i]={...activityPosts[i],...payload}; showToast('✅ แก้ไขกิจกรรมแล้ว'); }
+    if (ok) {
+      const idx = activityPosts.findIndex(x => x.id === Number(editId));
+      if (idx >= 0) {
+        activityPosts[idx] = {
+          ...activityPosts[idx],
+          title, description: desc, date,
+          mediaUrls: finalUrls,
+          youtubeUrl,
+          mediaType: youtubeUrl ? 'youtube' : (finalUrls.length > 0 ? 'image' : 'none'),
+          mediaUrl: youtubeUrl || (finalUrls.length > 0 ? finalUrls[0] : '')
+        };
+      }
+      showToast('✅ แก้ไขกิจกรรมแล้ว');
+      success = true;
+    }
   } else {
     const newId = await dbAddActivityPost(payload);
-    if (newId) { activityPosts.unshift({id:newId,...payload}); showToast('✅ เพิ่มกิจกรรมแล้ว'); }
+    if (newId) {
+      activityPosts.unshift({
+        id: newId, title, description: desc, date,
+        mediaUrls: finalUrls,
+        youtubeUrl,
+        mediaType: youtubeUrl ? 'youtube' : (finalUrls.length > 0 ? 'image' : 'none'),
+        mediaUrl: youtubeUrl || (finalUrls.length > 0 ? finalUrls[0] : ''),
+        createdAt: new Date().toISOString()
+      });
+      showToast('✅ เพิ่มกิจกรรมแล้ว');
+      success = true;
+    }
   }
-  closeModal('addActPostModal'); render();
+
+  if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกกิจกรรม'; }
+  if (success) {
+    pendingMediaItems = [];
+    closeModal('addActPostModal');
+    render();
+  }
 }
+
 async function deleteActPost(id) {
-  if(!confirm('ยืนยันการลบกิจกรรมนี้?')) return;
+  if (!confirm('ยืนยันการลบกิจกรรมนี้?')) return;
   const ok = await dbDeleteActivityPost(id);
-  if(ok) { activityPosts = activityPosts.filter(p=>p.id!==id); showToast('🗑️ ลบกิจกรรมแล้ว'); render(); }
+  if (ok) { activityPosts = activityPosts.filter(p => p.id !== id); showToast('🗑️ ลบกิจกรรมแล้ว'); render(); }
 }
-function viewActivityPost(id) {
-  const p = activityPosts.find(x=>x.id===id); if(!p) return;
+
+async function viewActivityPost(id) {
+  const p = activityPosts.find(x => x.id === id); if (!p) return;
+  currentViewPostId = id;
+
+  const youtubeUrl = p.youtubeUrl || (p.mediaType === 'youtube' ? p.mediaUrl : '');
+  const mediaUrls = (p.mediaUrls && p.mediaUrls.length > 0) ? p.mediaUrls
+    : (p.mediaUrl && p.mediaType === 'image' ? [p.mediaUrl] : []);
+
   let mediaHtml = '';
-  if (p.mediaType==='image'&&p.mediaUrl) {
-    mediaHtml = `<img src="${p.mediaUrl}" style="width:100%;max-height:480px;object-fit:contain;border-radius:10px;margin-bottom:14px;" alt="${p.title}">`;
-  } else if (p.mediaType==='youtube'&&p.mediaUrl) {
-    const ytId = getYoutubeId(p.mediaUrl);
-    const embedUrl = ytId?`https://www.youtube.com/embed/${ytId}?autoplay=1`:p.mediaUrl;
-    mediaHtml = `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;margin-bottom:14px;background:#000;"><iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="autoplay;fullscreen" allowfullscreen></iframe></div>`;
+
+  // YouTube embed
+  if (youtubeUrl) {
+    const ytId = getYoutubeId(youtubeUrl);
+    const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1` : youtubeUrl;
+    mediaHtml += `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;margin-bottom:14px;background:#000;"><iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="autoplay;fullscreen" allowfullscreen></iframe></div>`;
   }
-  document.getElementById('viewActPostContent').innerHTML = `${mediaHtml}<h2 style="font-family:Kanit,sans-serif;font-size:18px;font-weight:700;color:var(--green-dark);margin-bottom:6px;">${p.title}</h2><p style="font-size:12px;color:var(--gray-mid);margin-bottom:10px;">📅 ${formatThaiDate(p.date)}</p><p style="font-size:14px;color:var(--text-sub);line-height:1.7;">${(p.description||'').replace(/\n/g,'<br>')}</p>`;
+
+  // รูปภาพ/วีดีโอ
+  if (mediaUrls.length === 1) {
+    const url = mediaUrls[0];
+    const isVid = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+    mediaHtml += isVid
+      ? `<div class="media-gallery-single"><video src="${url}" controls style="width:100%;border-radius:10px;margin-bottom:14px;"></video></div>`
+      : `<div class="media-gallery-single"><img src="${url}" alt="${p.title}" onclick="this.requestFullscreen&&this.requestFullscreen()"></div>`;
+  } else if (mediaUrls.length > 1) {
+    const items = mediaUrls.map(url => {
+      const isVid = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+      return isVid
+        ? `<video src="${url}" controls style="width:100%;border-radius:8px;"></video>`
+        : `<img src="${url}" onclick="this.requestFullscreen&&this.requestFullscreen()" title="คลิกเพื่อขยาย">`;
+    }).join('');
+    mediaHtml += `<div class="media-gallery-grid">${items}</div>`;
+  }
+
+  document.getElementById('viewActPostContent').innerHTML = `
+    ${mediaHtml}
+    <h2 style="font-family:Kanit,sans-serif;font-size:18px;font-weight:700;color:var(--green-dark);margin-bottom:6px;">${p.title}</h2>
+    <p style="font-size:12px;color:var(--gray-mid);margin-bottom:10px;">📅 ${formatThaiDate(p.date)}</p>
+    <p style="font-size:14px;color:var(--text-sub);line-height:1.7;">${(p.description||'').replace(/\n/g,'<br>')}</p>
+  `;
+
+  // โหลดการเช็คชื่อ
+  const attendance = await dbGetAttendance(id);
+  document.getElementById('viewActAttendance').innerHTML = buildAttendanceHtml(p, attendance);
+
   openModal('viewActPostModal');
+}
+
+function buildAttendanceHtml(p, attendance) {
+  const chips = attendance.map((a, i) => {
+    const delBtn = isAdmin ? `<button class="att-del" onclick="event.stopPropagation();deleteAttendanceEntry(${a.id},${p.id})">×</button>` : '';
+    return `<div class="att-chip"><span class="att-num">${i+1}</span>${a.asomName}${delBtn}</div>`;
+  }).join('');
+
+  const titleEsc = p.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  return `<div class="attendance-section">
+    <h3>✅ การเช็คชื่อผู้เข้าร่วม <span style="font-size:13px;font-weight:500;">(${attendance.length} คน)</span></h3>
+    ${attendance.length > 0
+      ? `<div class="attendance-chips">${chips}</div>`
+      : `<p style="color:var(--gray-mid);font-size:13px;margin-bottom:8px;">ยังไม่มีการเช็คชื่อ</p>`
+    }
+    <button class="btn-primary" style="margin-top:12px;font-size:13px;padding:7px 18px;" onclick="openAttendanceModal(${p.id},'${titleEsc}','${p.date}')">📋 เช็คชื่อผู้เข้าร่วม</button>
+  </div>`;
+}
+
+// ============================================================
+// ATTENDANCE FUNCTIONS (เช็คชื่อ อสม.)
+// ============================================================
+async function openAttendanceModal(activityPostId, activityName, date) {
+  document.getElementById('attActivityId').value = activityPostId;
+  document.getElementById('attActivityInfo').innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--green-dark);">📅 ${activityName}</div>
+    <div style="font-size:12px;color:var(--gray-mid);margin-top:2px;">วันที่: ${formatThaiDate(date)}</div>
+  `;
+  const sel = document.getElementById('attMember');
+  sel.innerHTML = '<option value="">-- เลือก อสม. --</option>' +
+    members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+  await loadAttendanceModalList(activityPostId);
+  openModal('attendanceModal');
+}
+
+async function loadAttendanceModalList(activityPostId) {
+  const container = document.getElementById('attModalList');
+  if (!container) return;
+  container.innerHTML = '<p style="color:var(--gray-mid);font-size:12px;margin-top:12px;">⏳ กำลังโหลด...</p>';
+  const list = await dbGetAttendance(activityPostId);
+  if (list.length === 0) {
+    container.innerHTML = '<p style="color:var(--gray-mid);font-size:13px;text-align:center;margin-top:14px;">ยังไม่มีการเช็คชื่อ</p>';
+    return;
+  }
+  const chips = list.map((a, i) => `
+    <div class="att-chip">
+      <span class="att-num">${i+1}</span>
+      ${a.asomName}
+      <span style="font-size:11px;color:var(--gray-mid);margin-left:4px;">${a.date ? formatThaiDate(a.date) : ''}</span>
+      <button class="att-del" onclick="deleteAttendanceEntry(${a.id},${activityPostId})">×</button>
+    </div>
+  `).join('');
+  container.innerHTML = `<div class="att-modal-list">
+    <div class="att-modal-list-title">รายชื่อผู้เข้าร่วม (${list.length} คน)</div>
+    <div class="attendance-chips">${chips}</div>
+  </div>`;
+}
+
+async function saveAttendance() {
+  const activityPostId = Number(document.getElementById('attActivityId').value);
+  const asomId = document.getElementById('attMember').value;
+  if (!asomId) { showToast('❌ กรุณาเลือก อสม.'); return; }
+
+  const m = members.find(x => String(x.id) === String(asomId));
+  if (!m) { showToast('❌ ไม่พบข้อมูล อสม.'); return; }
+
+  const p = activityPosts.find(x => x.id === activityPostId);
+  showToast('⏳ กำลังบันทึก...');
+
+  const newId = await dbAddAttendance({
+    activityPostId,
+    activityName: p?.title || '',
+    date: p?.date || new Date().toISOString().split('T')[0],
+    asomId: Number(asomId),
+    asomName: m.name
+  });
+
+  if (newId) {
+    showToast('✅ เช็คชื่อสำเร็จ');
+    document.getElementById('attMember').value = '';
+    await loadAttendanceModalList(activityPostId);
+    // รีเฟรช viewActPostModal ถ้าเปิดอยู่
+    if (currentViewPostId === activityPostId) {
+      const fresh = await dbGetAttendance(activityPostId);
+      const vEl = document.getElementById('viewActAttendance');
+      if (vEl && p) vEl.innerHTML = buildAttendanceHtml(p, fresh);
+    }
+  }
+}
+
+async function deleteAttendanceEntry(attendanceId, activityPostId) {
+  if (!confirm('ลบรายชื่อนี้?')) return;
+  const ok = await dbDeleteAttendance(attendanceId);
+  if (ok) {
+    showToast('🗑️ ลบรายชื่อแล้ว');
+    await loadAttendanceModalList(activityPostId);
+    if (currentViewPostId === activityPostId) {
+      const fresh = await dbGetAttendance(activityPostId);
+      const p = activityPosts.find(x => x.id === activityPostId);
+      const vEl = document.getElementById('viewActAttendance');
+      if (vEl && p) vEl.innerHTML = buildAttendanceHtml(p, fresh);
+    }
+  }
 }
 
 // ============================================================
@@ -1854,13 +2342,11 @@ function editHealthMember(id) {
   document.getElementById('hDevNormal').checked = h.developmentNormal!==false;
   document.getElementById('hDisabilityType').value = h.disabilityType||'';
   document.getElementById('hDiseaseNote').value = h.diseaseNote||'';
-  // BP fields (parse from stored "sys/dia/pul" or "sys/dia")
   const bpStr = h.bp1||h.bp||'';
   const bpParts = bpStr.split('/');
   document.getElementById('hBPSys').value = bpParts[0]||'';
   document.getElementById('hBPDia').value = bpParts[1]||'';
   document.getElementById('hBPPul').value = bpParts[2]||h.bpPul||'';
-  // วันเกิด จาก ISO → พ.ศ.
   setBirthDateFromISO(h.birthDate||'');
   setSelectedDiseases(h.diseases||[]);
   if (h.photo) { document.getElementById('hPhotoPreview').src=h.photo; document.getElementById('hPhotoPreview').style.display='block'; }
@@ -1882,7 +2368,6 @@ async function saveHealthMember() {
   const lastName = document.getElementById('hLastName').value.trim();
   if (!firstName) { showToast('❌ กรุณาใส่ชื่อ'); return; }
 
-  // Validation & collect BP
   const bpSys = document.getElementById('hBPSys').value.trim();
   const bpDia = document.getElementById('hBPDia').value.trim();
   const bpPul = document.getElementById('hBPPul').value.trim();
@@ -1895,7 +2380,6 @@ async function saveHealthMember() {
   const birthDate = getBirthDateISO();
   if (birthDate && new Date(birthDate) > new Date()) { showToast('❌ วันเกิดห้ามเกินวันปัจจุบัน'); return; }
 
-  // คำนวณอายุ
   let age = null;
   if (birthDate) {
     const birth = new Date(birthDate); const today = new Date();
@@ -1907,8 +2391,6 @@ async function saveHealthMember() {
 
   const diseases = getSelectedDiseases();
   const photoSrc = document.getElementById('hPhotoPreview').src||'';
-
-  // BP classification text สำหรับเก็บ
   const bpStatus = bpSys && bpDia ? bpStatusText(bpSys, bpDia) : '';
 
   const data = {
@@ -1983,7 +2465,7 @@ function filterHealth() {
 }
 
 // ============================================================
-// DASHBOARD (พร้อม Chart.js)
+// DASHBOARD
 // ============================================================
 function getAgeGroup(age) {
   if (age === null || age === undefined) return 'ไม่ระบุ';
@@ -2011,12 +2493,10 @@ function renderDashboard() {
   return `
     <p class="section-title">📊 Dashboard สุขภาพชุมชน</p>
     <p class="section-sub">ข้อมูลสุขภาพรวม ${total} คน | หมู่บ้านใหม่เจริญไพร หมู่ 9</p>
-
     <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
       <button class="btn-excel" onclick="exportAllExcel()">📥 Export Excel ทั้งหมด</button>
       <button class="btn-primary" onclick="exportHealthExcel()" style="background:#1565c0;">📋 Export รายชื่อสมาชิก</button>
     </div>
-
     <div class="summary-grid">
       <div class="sum-card" style="border-top-color:#1a5c38;"><h3>ประชากรทั้งหมด</h3><div class="sum-num">${total} <span class="sum-unit">คน</span></div></div>
       <div class="sum-card" style="border-top-color:#1565c0;"><h3>ชาย / หญิง</h3><div class="sum-num">${male}/${female} <span class="sum-unit">คน</span></div></div>
@@ -2027,53 +2507,21 @@ function renderDashboard() {
       <div class="sum-card" style="border-top-color:#4527a0;"><h3>ผู้พิการ</h3><div class="sum-num">${disabled} <span class="sum-unit">คน</span></div></div>
       <div class="sum-card" style="border-top-color:#37474f;"><h3>ผู้ป่วยติดเตียง</h3><div class="sum-num">${bedbound} <span class="sum-unit">คน</span></div></div>
     </div>
-
     <div class="dashboard-charts">
-      <div class="chart-card">
-        <h3>🥧 โรคประจำตัว (จำแนกตามประเภท)</h3>
-        <div class="chart-wrap"><canvas id="chartDiseases"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>📊 จำนวนผู้ป่วยแยกโรค</h3>
-        <div class="chart-wrap"><canvas id="chartDiseaseBar"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>👥 แยกตามช่วงอายุ</h3>
-        <div class="chart-wrap"><canvas id="chartAgeGroup"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>⚥ แยกตามเพศ</h3>
-        <div class="chart-wrap"><canvas id="chartGender"></canvas></div>
-      </div>
+      <div class="chart-card"><h3>🥧 โรคประจำตัว (จำแนกตามประเภท)</h3><div class="chart-wrap"><canvas id="chartDiseases"></canvas></div></div>
+      <div class="chart-card"><h3>📊 จำนวนผู้ป่วยแยกโรค</h3><div class="chart-wrap"><canvas id="chartDiseaseBar"></canvas></div></div>
+      <div class="chart-card"><h3>👥 แยกตามช่วงอายุ</h3><div class="chart-wrap"><canvas id="chartAgeGroup"></canvas></div></div>
+      <div class="chart-card"><h3>⚥ แยกตามเพศ</h3><div class="chart-wrap"><canvas id="chartGender"></canvas></div></div>
     </div>
-
     <div style="background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-top:20px;">
       <h3 style="font-family:Kanit,sans-serif;font-size:16px;color:var(--green-dark);margin-bottom:16px;">📋 สรุปรายละเอียด</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
-        <div style="padding:12px;background:var(--green-pale);border-radius:10px;border-left:4px solid var(--green-mid);">
-          <div style="font-size:12px;color:var(--gray-mid);">โรคหัวใจ</div>
-          <div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:var(--green-dark);">${data.filter(h=>(h.diseases||[]).includes('โรคหัวใจ')).length} คน</div>
-        </div>
-        <div style="padding:12px;background:#fff3e0;border-radius:10px;border-left:4px solid #ff6d00;">
-          <div style="font-size:12px;color:var(--gray-mid);">โรคไต</div>
-          <div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#e65100;">${kidney} คน</div>
-        </div>
-        <div style="padding:12px;background:#fce4ec;border-radius:10px;border-left:4px solid #c62828;">
-          <div style="font-size:12px;color:var(--gray-mid);">โรคมะเร็ง</div>
-          <div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#c62828;">${cancer} คน</div>
-        </div>
-        <div style="padding:12px;background:#e3f2fd;border-radius:10px;border-left:4px solid #1565c0;">
-          <div style="font-size:12px;color:var(--gray-mid);">โรคตับ</div>
-          <div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#1565c0;">${data.filter(h=>(h.diseases||[]).includes('โรคตับ')).length} คน</div>
-        </div>
-        <div style="padding:12px;background:#f3e5f5;border-radius:10px;border-left:4px solid #6a1b9a;">
-          <div style="font-size:12px;color:var(--gray-mid);">หอบหืด</div>
-          <div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#6a1b9a;">${data.filter(h=>(h.diseases||[]).includes('หอบหืด')).length} คน</div>
-        </div>
-        <div style="padding:12px;background:#e8f5e9;border-radius:10px;border-left:4px solid #2e7d32;">
-          <div style="font-size:12px;color:var(--gray-mid);">อัมพฤกษ์/อัมพาต</div>
-          <div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#2e7d32;">${data.filter(h=>(h.diseases||[]).includes('อัมพฤกษ์')||(h.diseases||[]).includes('อัมพาต')).length} คน</div>
-        </div>
+        <div style="padding:12px;background:var(--green-pale);border-radius:10px;border-left:4px solid var(--green-mid);"><div style="font-size:12px;color:var(--gray-mid);">โรคหัวใจ</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:var(--green-dark);">${data.filter(h=>(h.diseases||[]).includes('โรคหัวใจ')).length} คน</div></div>
+        <div style="padding:12px;background:#fff3e0;border-radius:10px;border-left:4px solid #ff6d00;"><div style="font-size:12px;color:var(--gray-mid);">โรคไต</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#e65100;">${kidney} คน</div></div>
+        <div style="padding:12px;background:#fce4ec;border-radius:10px;border-left:4px solid #c62828;"><div style="font-size:12px;color:var(--gray-mid);">โรคมะเร็ง</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#c62828;">${cancer} คน</div></div>
+        <div style="padding:12px;background:#e3f2fd;border-radius:10px;border-left:4px solid #1565c0;"><div style="font-size:12px;color:var(--gray-mid);">โรคตับ</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#1565c0;">${data.filter(h=>(h.diseases||[]).includes('โรคตับ')).length} คน</div></div>
+        <div style="padding:12px;background:#f3e5f5;border-radius:10px;border-left:4px solid #6a1b9a;"><div style="font-size:12px;color:var(--gray-mid);">หอบหืด</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#6a1b9a;">${data.filter(h=>(h.diseases||[]).includes('หอบหืด')).length} คน</div></div>
+        <div style="padding:12px;background:#e8f5e9;border-radius:10px;border-left:4px solid #2e7d32;"><div style="font-size:12px;color:var(--gray-mid);">อัมพฤกษ์/อัมพาต</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#2e7d32;">${data.filter(h=>(h.diseases||[]).includes('อัมพฤกษ์')||(h.diseases||[]).includes('อัมพาต')).length} คน</div></div>
       </div>
     </div>`;
 }
@@ -2081,8 +2529,6 @@ function renderDashboard() {
 function initDashboardCharts() {
   const data = allHealthMembers;
   const COLORS = ['#2d8a55','#1565c0','#c62828','#e65100','#6a1b9a','#37474f','#880e4f','#4527a0','#558b2f','#0277bd','#ad1457','#ef6c00'];
-
-  // Chart 1: Pie - diseases
   const diseaseNames = ['เบาหวาน','ความดัน','โรคหัวใจ','โรคไต','พิการ','ผู้ป่วยติดเตียง','โรคมะเร็ง','โรคตับ','หอบหืด','ปกติ'];
   const diseaseCounts = diseaseNames.map(d => data.filter(h=>(h.diseases||[]).includes(d)).length);
   const filteredDiseases = diseaseNames.map((d,i)=>({label:d,count:diseaseCounts[i]})).filter(x=>x.count>0);
@@ -2094,8 +2540,6 @@ function initDashboardCharts() {
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font:{family:'Sarabun,sans-serif',size:12}, padding:8 } } } }
     });
   }
-
-  // Chart 2: Bar - disease counts
   const ctx2 = document.getElementById('chartDiseaseBar');
   if (ctx2) {
     const labels = ['เบาหวาน','ความดัน','โรคหัวใจ','โรคไต','โรคมะเร็ง','พิการ','ติดเตียง'];
@@ -2106,8 +2550,6 @@ function initDashboardCharts() {
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { y: { beginAtZero:true, ticks:{font:{family:'Sarabun,sans-serif'}} }, x: { ticks:{font:{family:'Sarabun,sans-serif',size:11}} } } }
     });
   }
-
-  // Chart 3: Bar - age groups
   const ctx3 = document.getElementById('chartAgeGroup');
   if (ctx3) {
     const ageGroups = ['เด็ก 0-5 ปี','เด็ก 6-12 ปี','วัยรุ่น 13-17 ปี','วัยทำงาน 18-59 ปี','ผู้สูงอายุ 60+ ปี'];
@@ -2118,8 +2560,6 @@ function initDashboardCharts() {
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend:{display:false} }, scales: { y:{beginAtZero:true,ticks:{font:{family:'Sarabun,sans-serif'}}}, x:{ticks:{font:{family:'Sarabun,sans-serif',size:10}}} } }
     });
   }
-
-  // Chart 4: Pie - gender
   const ctx4 = document.getElementById('chartGender');
   if (ctx4) {
     const maleC = data.filter(h=>h.gender==='ชาย').length;
@@ -2143,8 +2583,6 @@ function exportHealthExcel() {
   const wb = XLSX.utils.book_new();
   const today = new Date();
   const exportDate = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()+543}`;
-
-  // Sheet 1: รายชื่อสมาชิก
   const membersSheet = [
     [`รายชื่อสมาชิก อสม. บ้านใหม่เจริญไพร หมู่ 9`, '', '', '', '', '', `วันที่ Export: ${exportDate}`],
     [],
@@ -2152,71 +2590,36 @@ function exportHealthExcel() {
   ];
   const sorted = [...data].sort((a,b)=>(a.address||'').localeCompare(b.address||'',undefined,{numeric:true}));
   sorted.forEach((h,i) => {
-    membersSheet.push([
-      i+1, h.firstName, h.lastName, h.gender||'', h.age||'', h.birthDate||'',
-      h.address||'', h.idCard||'', h.phone||'',
-      Array.isArray(h.diseases)?h.diseases.join(', '):(h.diseases||''),
-      h.height||'', h.weight||'', h.bmi||'',
-      h.bp1||'', h.bp2||'', h.bp3||'',
-      h.bloodSugar||'', h.caretaker||''
-    ]);
+    membersSheet.push([i+1, h.firstName, h.lastName, h.gender||'', h.age||'', h.birthDate||'', h.address||'', h.idCard||'', h.phone||'', Array.isArray(h.diseases)?h.diseases.join(', '):(h.diseases||''), h.height||'', h.weight||'', h.bmi||'', h.bp1||'', h.bp2||'', h.bp3||'', h.bloodSugar||'', h.caretaker||'']);
   });
   const ws1 = XLSX.utils.aoa_to_sheet(membersSheet);
   ws1['!cols'] = [{wch:6},{wch:14},{wch:14},{wch:6},{wch:6},{wch:12},{wch:10},{wch:16},{wch:13},{wch:30},{wch:10},{wch:10},{wch:8},{wch:10},{wch:10},{wch:10},{wch:12},{wch:16}];
   XLSX.utils.book_append_sheet(wb, ws1, 'รายชื่อสมาชิก');
-
-  // Sheet 2: รายงานโรค
-  const diseaseSheet = [
-    [`รายงานโรคประจำตัว`, '', `วันที่ Export: ${exportDate}`],
-    [],
-    ['โรค','จำนวน(คน)','ร้อยละ']
-  ];
+  const diseaseSheet = [[`รายงานโรคประจำตัว`, '', `วันที่ Export: ${exportDate}`],[],['โรค','จำนวน(คน)','ร้อยละ']];
   const diseaseList = ['ปกติ','เบาหวาน','ความดัน','โรคหัวใจ','โรคไต','โรคเกาต์','โรคตับ','โรคมะเร็ง','หอบหืด','อัมพฤกษ์','อัมพาต','ผู้ป่วยติดเตียง','พิการ','อื่นๆ'];
   const totalPeople = data.length;
-  diseaseList.forEach(d => {
-    const cnt = data.filter(h=>(h.diseases||[]).includes(d)).length;
-    if (cnt>0) diseaseSheet.push([d, cnt, totalPeople>0?((cnt/totalPeople)*100).toFixed(1)+'%':'0%']);
-  });
+  diseaseList.forEach(d => { const cnt = data.filter(h=>(h.diseases||[]).includes(d)).length; if (cnt>0) diseaseSheet.push([d, cnt, totalPeople>0?((cnt/totalPeople)*100).toFixed(1)+'%':'0%']); });
   const ws2 = XLSX.utils.aoa_to_sheet(diseaseSheet);
   ws2['!cols'] = [{wch:20},{wch:12},{wch:10}];
   XLSX.utils.book_append_sheet(wb, ws2, 'รายงานโรค');
-
-  // Sheet 3: รายงานเด็ก 0-5 ปี
   const children = data.filter(h=>h.age<=5&&h.age!==null&&h.age!==undefined);
-  const childSheet = [
-    ['รายงานสุขภาพเด็ก 0-5 ปี', '', `วันที่ Export: ${exportDate}`],
-    [],
-    ['ลำดับ','ชื่อ','นามสกุล','อายุ','เพศ','บ้านเลขที่','น้ำหนัก','ส่วนสูง','รอบศีรษะ','วัคซีนครบ','พัฒนาการสมวัย']
-  ];
-  children.forEach((h,i) => {
-    childSheet.push([i+1, h.firstName, h.lastName, h.age, h.gender||'', h.address||'', h.weight||'', h.height||'', h.headSize||'', h.vaccineCompleted?'ครบ':'ยังไม่ครบ', h.developmentNormal?'สมวัย':'ล่าช้า']);
-  });
+  const childSheet = [['รายงานสุขภาพเด็ก 0-5 ปี', '', `วันที่ Export: ${exportDate}`],[],['ลำดับ','ชื่อ','นามสกุล','อายุ','เพศ','บ้านเลขที่','น้ำหนัก','ส่วนสูง','รอบศีรษะ','วัคซีนครบ','พัฒนาการสมวัย']];
+  children.forEach((h,i) => { childSheet.push([i+1, h.firstName, h.lastName, h.age, h.gender||'', h.address||'', h.weight||'', h.height||'', h.headSize||'', h.vaccineCompleted?'ครบ':'ยังไม่ครบ', h.developmentNormal?'สมวัย':'ล่าช้า']); });
   const ws3 = XLSX.utils.aoa_to_sheet(childSheet);
   ws3['!cols'] = [{wch:6},{wch:14},{wch:14},{wch:6},{wch:6},{wch:10},{wch:10},{wch:10},{wch:10},{wch:12},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws3, 'รายงานเด็ก 0-5 ปี');
-
-  // Sheet 4: ผู้สูงอายุ
   const elderly = data.filter(h=>h.age>=60);
-  const elderlySheet = [
-    ['รายงานผู้สูงอายุ 60+ ปี', '', `วันที่ Export: ${exportDate}`],
-    [],
-    ['ลำดับ','ชื่อ','นามสกุล','อายุ','เพศ','บ้านเลขที่','เบอร์โทร','โรคประจำตัว','ความดัน1','น้ำตาลในเลือด','ผู้ดูแล']
-  ];
-  elderly.forEach((h,i) => {
-    elderlySheet.push([i+1, h.firstName, h.lastName, h.age, h.gender||'', h.address||'', h.phone||'', Array.isArray(h.diseases)?h.diseases.join(', '):(h.diseases||''), h.bp1||'', h.bloodSugar||'', h.caretaker||'']);
-  });
+  const elderlySheet = [['รายงานผู้สูงอายุ 60+ ปี', '', `วันที่ Export: ${exportDate}`],[],['ลำดับ','ชื่อ','นามสกุล','อายุ','เพศ','บ้านเลขที่','เบอร์โทร','โรคประจำตัว','ความดัน1','น้ำตาลในเลือด','ผู้ดูแล']];
+  elderly.forEach((h,i) => { elderlySheet.push([i+1, h.firstName, h.lastName, h.age, h.gender||'', h.address||'', h.phone||'', Array.isArray(h.diseases)?h.diseases.join(', '):(h.diseases||''), h.bp1||'', h.bloodSugar||'', h.caretaker||'']); });
   const ws4 = XLSX.utils.aoa_to_sheet(elderlySheet);
   ws4['!cols'] = [{wch:6},{wch:14},{wch:14},{wch:6},{wch:6},{wch:10},{wch:13},{wch:30},{wch:10},{wch:12},{wch:16}];
   XLSX.utils.book_append_sheet(wb, ws4, 'รายงานผู้สูงอายุ');
-
   const fileName = `สมาชิก_อสม_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
   XLSX.writeFile(wb, fileName);
   showToast('✅ Export Excel สำเร็จ');
 }
 
-function exportAllExcel() {
-  exportHealthExcel();
-}
+function exportAllExcel() { exportHealthExcel(); }
 
 // ============================================================
 // CONTACT
