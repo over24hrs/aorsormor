@@ -299,6 +299,45 @@ main { max-width:1200px; margin:0 auto; padding:24px 16px; }
 .spinner { width:40px; height:40px; border:4px solid var(--green-pale); border-top-color:var(--green-mid); border-radius:50%; animation:spin .7s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
 input[type="file"] { display:none; }
+
+/* CHAT */
+.chat-wrap { display:flex; flex-direction:column; height:calc(100vh - 280px); min-height:420px; background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.chat-header { background:linear-gradient(135deg,var(--green-dark),var(--green-mid)); color:white; padding:14px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.chat-header h3 { font-family:'Kanit',sans-serif; font-size:16px; font-weight:600; margin:0; }
+.chat-header .online-dot { width:10px; height:10px; border-radius:50%; background:#69f0ae; box-shadow:0 0 6px #69f0ae; flex-shrink:0; }
+.chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; background:#f0f4f2; scroll-behavior:smooth; }
+.chat-messages::-webkit-scrollbar { width:5px; }
+.chat-messages::-webkit-scrollbar-track { background:transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background:var(--green-light); border-radius:99px; }
+.chat-day-divider { text-align:center; margin:8px 0; }
+.chat-day-divider span { background:rgba(0,0,0,.12); color:var(--text-sub); font-size:11px; padding:3px 12px; border-radius:99px; }
+.chat-bubble-wrap { display:flex; gap:8px; align-items:flex-end; max-width:75%; }
+.chat-bubble-wrap.me { align-self:flex-end; flex-direction:row-reverse; }
+.chat-bubble-wrap.other { align-self:flex-start; }
+.chat-avatar { width:34px; height:34px; border-radius:50%; background:var(--green-mid); display:flex; align-items:center; justify-content:center; font-family:'Kanit',sans-serif; font-size:13px; font-weight:700; color:white; flex-shrink:0; overflow:hidden; }
+.chat-avatar img { width:100%; height:100%; object-fit:cover; }
+.chat-bubble-inner { display:flex; flex-direction:column; gap:2px; }
+.chat-sender { font-size:11px; font-weight:600; color:var(--green-dark); margin-bottom:2px; padding:0 4px; }
+.chat-bubble-wrap.me .chat-sender { text-align:right; }
+.chat-bubble { padding:9px 13px; border-radius:16px; font-size:14px; line-height:1.5; word-break:break-word; position:relative; }
+.chat-bubble-wrap.me .chat-bubble { background:var(--green-mid); color:white; border-bottom-right-radius:4px; }
+.chat-bubble-wrap.other .chat-bubble { background:white; color:var(--text-main); border-bottom-left-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+.chat-bubble img { max-width:220px; border-radius:10px; margin-top:4px; display:block; cursor:zoom-in; }
+.chat-time { font-size:10px; opacity:.65; margin-top:3px; padding:0 4px; }
+.chat-bubble-wrap.me .chat-time { text-align:right; }
+.chat-admin-del { background:none; border:none; color:rgba(255,255,255,.6); cursor:pointer; font-size:12px; padding:0 0 0 6px; line-height:1; vertical-align:middle; }
+.chat-bubble-wrap.other .chat-admin-del { color:rgba(0,0,0,.3); }
+.chat-input-area { padding:12px 14px; background:white; border-top:1.5px solid var(--green-pale); display:flex; gap:8px; align-items:flex-end; flex-shrink:0; }
+.chat-input-area textarea { flex:1; border:1.5px solid #dde8e1; border-radius:20px; padding:9px 14px; font-family:'Sarabun',sans-serif; font-size:14px; resize:none; max-height:100px; outline:none; line-height:1.5; transition:.2s; }
+.chat-input-area textarea:focus { border-color:var(--green-mid); }
+.chat-send-btn { width:42px; height:42px; border-radius:50%; background:var(--green-mid); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.2s; }
+.chat-send-btn:hover { background:var(--green-dark); }
+.chat-send-btn svg { width:20px; height:20px; fill:white; margin-left:2px; }
+.chat-img-btn { width:38px; height:38px; border-radius:50%; background:var(--green-pale); border:1.5px solid var(--green-light); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; transition:.2s; }
+.chat-img-btn:hover { background:var(--green-light); }
+.chat-login-prompt { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:40px 20px; }
+.chat-loading { display:flex; align-items:center; justify-content:center; padding:30px; }
+.chat-empty { text-align:center; padding:40px 20px; color:var(--gray-mid); }
 .photo-upload-label { cursor:pointer; }
 
 .bp-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
@@ -393,6 +432,7 @@ input[type="file"] { display:none; }
     <button onclick="showPage('health')">👨‍👩‍👧 สมาชิกลูกป๊อก</button>
     <button onclick="showPage('mosquitoSurvey')">🦟 กลุ่มสำรวจลูกน้ำยุ่งลาย</button>
     <button onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button onclick="showPage('chat')">💬 ห้องแชท อสม.</button>
     <button onclick="showPage('contact')">📞 ติดต่อเรา</button>
   </div>
 </nav>
@@ -802,6 +842,9 @@ let editingEventId = null;
 let editingActPostId = null;
 let dashboardCharts = {};
 let currentViewPostId = null;
+let chatMessages = [];
+let chatSubscription = null;
+let chatLoginName = null; // ชื่อที่ใช้แชท (อาจเป็น loggedInAsom หรือ guest)
 
 // State สำหรับ multi-media upload
 let pendingMediaItems = []; // { type:'image'|'video', dataUrl:string, file:File|null, storedUrl:string|null }
@@ -1592,7 +1635,298 @@ async function dbMoveMosquitoGroupMember(id, newGroup) {
   if (error) { dbErr('ย้ายกลุ่ม', error); return false; }
   return true;
 }
+// ============================================================
+// CHAT DB + REALTIME
+// ============================================================
+async function dbGetChatMessages(limit) {
+  const { data, error } = await db
+    .from('chat_messages')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit || 100);
+  if (error) { console.warn('chat load error:', error); return []; }
+  return (data || []).reverse();
+}
 
+async function dbSendChatMessage({ asomId, asomName, message, imageUrl }) {
+  const { data, error } = await db.from('chat_messages').insert({
+    asom_id: asomId,
+    asom_name: asomName,
+    message: message || '',
+    image_url: imageUrl || null
+  }).select().single();
+  if (error) { console.warn('chat send error:', error); return null; }
+  return data;
+}
+
+async function dbDeleteChatMessage(id) {
+  const { error } = await db.from('chat_messages').delete().eq('id', id);
+  return !error;
+}
+
+function subscribeChatRealtime() {
+  // ยกเลิก subscription เก่าก่อน
+  if (chatSubscription) {
+    db.removeChannel(chatSubscription);
+    chatSubscription = null;
+  }
+  chatSubscription = db
+    .channel('chat-room')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'chat_messages'
+    }, payload => {
+      const msg = payload.new;
+      // เช็คว่ายังไม่มีใน array
+      if (!chatMessages.find(m => m.id === msg.id)) {
+        chatMessages.push(msg);
+        appendChatBubble(msg);
+        scrollChatToBottom();
+      }
+    })
+    .on('postgres_changes', {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'chat_messages'
+    }, payload => {
+      chatMessages = chatMessages.filter(m => m.id !== payload.old.id);
+      const el = document.getElementById('chatmsg-' + payload.old.id);
+      if (el) el.remove();
+    })
+    .subscribe();
+}
+
+function unsubscribeChatRealtime() {
+  if (chatSubscription) {
+    db.removeChannel(chatSubscription);
+    chatSubscription = null;
+  }
+}
+
+// ============================================================
+// CHAT RENDER HELPERS
+// ============================================================
+function formatChatTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  return `${h}:${m}`;
+}
+
+function formatChatDate(isoStr) {
+  if (!isoStr) return '';
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const d = new Date(isoStr);
+  const today = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+  if (d.toDateString() === today.toDateString()) return 'วันนี้';
+  if (d.toDateString() === yesterday.toDateString()) return 'เมื่อวาน';
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+function buildChatBubbleHTML(msg) {
+  const isMe = chatLoginName && String(msg.asom_id) === String(chatLoginName.id);
+  const side = isMe ? 'me' : 'other';
+  const initial = (msg.asom_name||'?').replace(/^(นาง|นาย|นางสาว)/,'').trim().charAt(0)||'?';
+
+  // หา photo จาก members
+  const member = members.find(m => String(m.id) === String(msg.asom_id));
+  const avatarHtml = member?.photo
+    ? `<div class="chat-avatar"><img src="${member.photo}" alt="${initial}"></div>`
+    : `<div class="chat-avatar">${initial}</div>`;
+
+  const delBtn = isAdmin
+    ? `<button class="chat-admin-del" onclick="deleteChatMsg(${msg.id})" title="ลบข้อความ">✕</button>`
+    : '';
+
+  const imgHtml = msg.image_url
+    ? `<img src="${msg.image_url}" onclick="this.requestFullscreen&&this.requestFullscreen()" alt="รูปภาพ">`
+    : '';
+
+  const textHtml = msg.message
+    ? `<span>${msg.message.replace(/\n/g,'<br>')}</span>`
+    : '';
+
+  return `<div class="chat-bubble-wrap ${side}" id="chatmsg-${msg.id}">
+    ${side === 'other' ? avatarHtml : ''}
+    <div class="chat-bubble-inner">
+      ${side === 'other' ? `<div class="chat-sender">${msg.asom_name||''}</div>` : ''}
+      <div class="chat-bubble">
+        ${textHtml}${imgHtml}
+        ${delBtn}
+      </div>
+      <div class="chat-time">${formatChatTime(msg.created_at)}</div>
+    </div>
+    ${side === 'me' ? avatarHtml : ''}
+  </div>`;
+}
+
+function appendChatBubble(msg) {
+  const container = document.getElementById('chatMsgContainer');
+  if (!container) return;
+
+  // เช็ควันที่ divider
+  const lastDivider = container.querySelector('.chat-day-divider:last-of-type');
+  const msgDate = formatChatDate(msg.created_at);
+  if (!lastDivider || lastDivider.dataset.date !== msgDate) {
+    const div = document.createElement('div');
+    div.className = 'chat-day-divider';
+    div.dataset.date = msgDate;
+    div.innerHTML = `<span>${msgDate}</span>`;
+    container.appendChild(div);
+  }
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = buildChatBubbleHTML(msg);
+  const el = wrap.firstElementChild;
+  if (el) container.appendChild(el);
+}
+
+function scrollChatToBottom() {
+  const container = document.getElementById('chatMsgContainer');
+  if (container) setTimeout(() => { container.scrollTop = container.scrollHeight; }, 60);
+}
+
+function renderAllChatMessages() {
+  const container = document.getElementById('chatMsgContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!chatMessages.length) {
+    container.innerHTML = `<div class="chat-empty"><div style="font-size:48px;margin-bottom:12px;">💬</div><p>ยังไม่มีข้อความ<br>เริ่มสนทนากันได้เลย!</p></div>`;
+    return;
+  }
+  let lastDate = '';
+  chatMessages.forEach(msg => {
+    const msgDate = formatChatDate(msg.created_at);
+    if (msgDate !== lastDate) {
+      lastDate = msgDate;
+      const div = document.createElement('div');
+      div.className = 'chat-day-divider';
+      div.dataset.date = msgDate;
+      div.innerHTML = `<span>${msgDate}</span>`;
+      container.appendChild(div);
+    }
+    const wrap = document.createElement('div');
+    wrap.innerHTML = buildChatBubbleHTML(msg);
+    const el = wrap.firstElementChild;
+    if (el) container.appendChild(el);
+  });
+  scrollChatToBottom();
+}
+
+// ============================================================
+// CHAT PAGE RENDER
+// ============================================================
+function renderChat() {
+  // ยังไม่ได้ล็อกอิน
+  if (!loggedInAsom) {
+    return `
+      <p class="section-title">💬 ห้องแชท อสม.</p>
+      <p class="section-sub">สนทนาในกลุ่ม อสม. บ้านใหม่เจริญไพร หมู่ 9</p>
+      <div class="chat-wrap">
+        <div class="chat-header">
+          <div class="online-dot"></div>
+          <h3>💬 ห้องแชท อสม. หมู่ 9</h3>
+        </div>
+        <div class="chat-login-prompt">
+          <div style="font-size:56px;">🔒</div>
+          <div style="font-family:Kanit,sans-serif;font-size:18px;font-weight:600;color:var(--green-dark);">กรุณาเข้าสู่ระบบก่อน</div>
+          <p style="color:var(--gray-mid);font-size:13px;text-align:center;line-height:1.6;">ต้องล็อกอินด้วยบัญชี อสม. ก่อนถึงจะแชทได้<br>ข้อความจะถูกบันทึกใน Supabase ไม่หายหลัง refresh</p>
+          <button class="btn-primary" style="padding:10px 28px;font-size:14px;" onclick="showPage('health')">🔑 ไปหน้าเข้าสู่ระบบ</button>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <p class="section-title">💬 ห้องแชท อสม.</p>
+    <p class="section-sub">สนทนาในกลุ่ม อสม. บ้านใหม่เจริญไพร หมู่ 9</p>
+    <div class="chat-wrap">
+      <div class="chat-header">
+        <div class="online-dot"></div>
+        <h3>💬 ห้องแชท อสม. หมู่ 9</h3>
+        <span style="font-size:12px;opacity:.8;margin-left:auto;">👤 ${loggedInAsom.name}</span>
+      </div>
+      <div class="chat-messages" id="chatMsgContainer">
+        <div class="chat-loading"><div class="spinner"></div></div>
+      </div>
+      <div class="chat-input-area">
+        <label class="chat-img-btn" title="ส่งรูปภาพ">
+          📷<input type="file" accept="image/*" onchange="sendChatImage(event)">
+        </label>
+        <textarea id="chatInput" placeholder="พิมพ์ข้อความ..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage()" title="ส่ง">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>`;
+}
+
+async function initChatPage() {
+  chatLoginName = loggedInAsom;
+  chatMessages = await dbGetChatMessages(100);
+  renderAllChatMessages();
+  subscribeChatRealtime();
+}
+
+async function sendChatMessage() {
+  if (!loggedInAsom) return;
+  const input = document.getElementById('chatInput');
+  const text = (input?.value || '').trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  const result = await dbSendChatMessage({
+    asomId: loggedInAsom.id,
+    asomName: loggedInAsom.name,
+    message: text,
+    imageUrl: null
+  });
+  // Realtime จะ append ให้อัตโนมัติ
+  // แต่ถ้า Realtime ไม่ทำงาน fallback ด้วยการ append manual
+  if (result && !chatMessages.find(m => m.id === result.id)) {
+    chatMessages.push(result);
+    appendChatBubble(result);
+    scrollChatToBottom();
+  }
+}
+
+async function sendChatImage(event) {
+  if (!loggedInAsom) return;
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  showToast('⏳ กำลังอัปโหลดรูป...');
+  const result = await uploadMediaToStorage(file);
+  if (!result || !result.url) { showToast('❌ อัปโหลดรูปไม่สำเร็จ'); return; }
+  const msg = await dbSendChatMessage({
+    asomId: loggedInAsom.id,
+    asomName: loggedInAsom.name,
+    message: '',
+    imageUrl: result.url
+  });
+  if (msg && !chatMessages.find(m => m.id === msg.id)) {
+    chatMessages.push(msg);
+    appendChatBubble(msg);
+    scrollChatToBottom();
+  }
+  showToast('✅ ส่งรูปภาพแล้ว');
+}
+
+async function deleteChatMsg(id) {
+  if (!isAdmin) return;
+  if (!confirm('ลบข้อความนี้?')) return;
+  const ok = await dbDeleteChatMessage(id);
+  if (ok) {
+    chatMessages = chatMessages.filter(m => m.id !== id);
+    const el = document.getElementById('chatmsg-' + id);
+    if (el) el.remove();
+    showToast('🗑️ ลบข้อความแล้ว');
+  }
+}
 // ============================================================
 // INIT
 // ============================================================
@@ -1738,8 +2072,12 @@ function setupMemberAutocomplete(inputId, onSelect) {
 // NAV & RENDER
 // ============================================================
 function showPage(page) {
+  // ออกจากหน้าแชท → ยกเลิก realtime subscription
+  if (currentPage === 'chat' && page !== 'chat') {
+    unsubscribeChatRealtime();
+  }
   currentPage = page;
-  const pages = ['home','finance','activities','actOrder','activityPosts','health','mosquitoSurvey','dashboard','contact'];
+  const pages = ['home','finance','activities','actOrder','activityPosts','health','mosquitoSurvey','dashboard','contact','chat'];
   document.querySelectorAll('nav button').forEach((b, i) => {
     b.classList.toggle('active', pages[i] === page);
   });
@@ -1760,6 +2098,10 @@ function render() {
   else if (currentPage === 'mosquitoSurvey') el.innerHTML = renderMosquitoSurvey();
   else if (currentPage === 'dashboard') { el.innerHTML = renderDashboard(); setTimeout(initDashboardCharts, 50); }
   else if (currentPage === 'contact')   el.innerHTML = renderContact();
+  else if (currentPage === 'chat') {
+    el.innerHTML = renderChat();
+    if (loggedInAsom) setTimeout(() => initChatPage(), 50);
+  }
 }
 
 // ============================================================
