@@ -271,6 +271,31 @@ main { max-width:1200px; margin:0 auto; padding:24px 16px; }
 .hidden { display:none; }
 .toast { position:fixed; bottom:24px; right:24px; background:var(--green-dark); color:white; padding:12px 20px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; z-index:2000; opacity:0; transition:opacity .3s; pointer-events:none; max-width:320px; }
 .toast.show { opacity:1; }
+
+/* MOSQUITO SURVEY GROUPS */
+.survey-groups-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-top:8px; }
+.survey-group-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.survey-group-header { padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+.group-color-1 { background:linear-gradient(135deg,#1a5c38,#2d8a55); }
+.group-color-2 { background:linear-gradient(135deg,#0d47a1,#1565c0); }
+.group-color-3 { background:linear-gradient(135deg,#7b1fa2,#9c27b0); }
+.group-color-4 { background:linear-gradient(135deg,#bf360c,#e64a19); }
+.survey-group-title { font-family:'Kanit',sans-serif; font-size:16px; font-weight:700; }
+.survey-group-count { font-size:13px; background:rgba(255,255,255,.25); border-radius:99px; padding:3px 10px; }
+.survey-member-list { padding:8px 12px; min-height:60px; }
+.survey-member-row { display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid var(--green-pale); }
+.survey-member-row:last-child { border-bottom:none; }
+.survey-member-num { background:var(--green-dark); color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.survey-member-name { font-weight:600; font-size:13px; color:var(--text-main); }
+.survey-member-phone { font-size:11px; color:var(--green-dark); font-weight:600; }
+.survey-add-btn { width:100%; background:var(--green-pale); border:2px dashed var(--green-light); border-radius:0 0 var(--radius) var(--radius); padding:10px; font-family:'Sarabun',sans-serif; font-size:13px; font-weight:600; color:var(--green-mid); cursor:pointer; transition:.2s; }
+.survey-add-btn:hover { background:var(--green-light); color:white; border-style:solid; }
+
+/* AUTOCOMPLETE */
+.autocomplete-wrap { position:relative; }
+.autocomplete-list { position:absolute; top:100%; left:0; right:0; background:white; border:1.5px solid var(--green-light); border-top:none; border-radius:0 0 var(--radius-sm) var(--radius-sm); z-index:999; max-height:200px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,.12); }
+.autocomplete-item { padding:9px 12px; cursor:pointer; font-size:13px; font-family:'Sarabun',sans-serif; border-bottom:1px solid var(--green-pale); }
+.autocomplete-item:hover, .autocomplete-item.active { background:var(--green-pale); color:var(--green-dark); font-weight:600; }
 .spinner { width:40px; height:40px; border:4px solid var(--green-pale); border-top-color:var(--green-mid); border-radius:50%; animation:spin .7s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
 input[type="file"] { display:none; }
@@ -675,6 +700,40 @@ input[type="file"] { display:none; }
   </div>
 </div>
 
+<!-- MOSQUITO ADD MEMBER MODAL -->
+<div class="modal-overlay" id="mosquitoAddModal">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('mosquitoAddModal')">×</button>
+    <h2 id="mosquitoAddModalTitle">➕ เพิ่มสมาชิกเข้ากลุ่ม</h2>
+    <input type="hidden" id="mosquitoTargetGroup">
+
+    <div style="background:var(--green-pale);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--green-dark);">
+      <strong>วิธีเพิ่มสมาชิก:</strong> เลือกจากรายชื่อ อสม. ที่มีอยู่แล้ว หรือพิมพ์ชื่อเพื่อค้นหา
+    </div>
+
+    <div class="form-group autocomplete-wrap">
+      <label>ค้นหาชื่อ อสม. <span style="color:red">*</span></label>
+      <input id="mosquitoSearchInput" placeholder="พิมพ์ชื่อเพื่อค้นหา..." autocomplete="off"
+             oninput="filterMosquitoMembers(this.value)"
+             style="width:100%;padding:9px 12px;border:1.5px solid #d1fae5;border-radius:8px;font-family:Sarabun,sans-serif;font-size:14px;">
+      <div id="mosquitoAutocompleteList" class="autocomplete-list" style="display:none;"></div>
+    </div>
+
+    <div class="form-group" style="margin-top:12px;">
+      <label>หรือเลือกจากรายการ</label>
+      <select id="mosquitoMemberSelect"
+              style="width:100%;padding:9px 12px;border:1.5px solid #d1fae5;border-radius:8px;font-family:Sarabun,sans-serif;font-size:14px;">
+        <option value="">-- เลือก อสม. --</option>
+      </select>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn-primary w-full" onclick="saveMosquitoGroupMember()">✅ เพิ่มเข้ากลุ่ม</button>
+      <button onclick="closeModal('mosquitoAddModal')" style="flex:1;padding:9px;border:1.5px solid #ccc;border-radius:8px;cursor:pointer;font-family:Sarabun,sans-serif;background:white;">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ATTENDANCE MODAL (เช็คชื่อ อสม.) -->
 <div class="modal-overlay" id="attendanceModal">
   <div class="modal" style="max-width:540px;">
@@ -721,6 +780,7 @@ let activityOrders = [];
 let healthMembers = [];
 let allHealthMembers = [];
 let activityPosts = [];
+let mosquitoSurveyGroups = [];
 let isAdmin = false;
 let calMonth = new Date().getMonth();
 let calYear = new Date().getFullYear();
@@ -1490,6 +1550,8 @@ async function initApp() {
     allHealthMembers = allHealthData;
     mosquitoSurveyGroups = mosquitoData;
     if (settingsData.marquee_text) document.getElementById('marqueeText').textContent = settingsData.marquee_text;
+    // ถ้า Supabase members ว่างเปล่า → seed ข้อมูล 21 คนอัตโนมัติ
+    if (membersData.length === 0) await autoSeedMembersIfEmpty();
     const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
     if (remembered?.id) {
       const dbPw = await dbGetPassword(remembered.id);
@@ -1509,28 +1571,83 @@ async function initApp() {
 
 function loadDefaultMembers() {
   return [
-    {id:1,name:'นางสาวสมใจ ใจดี',role:'ประธาน อสม.',phone:'081-234-5678',photo:'',village:'9'},
-    {id:2,name:'นางมาลี สวัสดิ์',role:'รองประธาน',phone:'082-345-6789',photo:'',village:'9'},
-    {id:3,name:'นางสาวสุภาพ รักษ์ดี',role:'เลขานุการ',phone:'083-456-7890',photo:'',village:'9'},
-    {id:4,name:'นางวิไล ชื่นใจ',role:'เหรัญญิก',phone:'084-567-8901',photo:'',village:'9'},
-    {id:5,name:'นางสาวรัตนา งามจิต',role:'กรรมการ',phone:'085-678-9012',photo:'',village:'9'},
-    {id:6,name:'นางประนอม แสนดี',role:'กรรมการ',phone:'086-789-0123',photo:'',village:'9'},
-    {id:7,name:'นางสาวกัลยา พรมมา',role:'กรรมการ',phone:'087-890-1234',photo:'',village:'9'},
-    {id:8,name:'นางบุญมี ศรีสุข',role:'กรรมการ',phone:'088-901-2345',photo:'',village:'9'},
-    {id:9,name:'นางเพ็ญ จันทร์แดง',role:'กรรมการ',phone:'089-012-3456',photo:'',village:'9'},
-    {id:10,name:'นางสาวอรุณี วงค์คำ',role:'กรรมการ',phone:'081-123-4567',photo:'',village:'9'},
-    {id:11,name:'นางนงนุช ดาวเรือง',role:'กรรมการ',phone:'082-234-5678',photo:'',village:'9'},
-    {id:12,name:'นางสาวพิมพ์ใจ ทองดี',role:'กรรมการ',phone:'083-345-6789',photo:'',village:'9'},
-    {id:13,name:'นางสุดา ฤทธิ์เดช',role:'กรรมการ',phone:'084-456-7890',photo:'',village:'9'},
-    {id:14,name:'นางจำปี ผลดี',role:'กรรมการ',phone:'085-567-8901',photo:'',village:'9'},
-    {id:15,name:'นางสาวทิพย์วรรณ มีสุข',role:'กรรมการ',phone:'086-678-9012',photo:'',village:'9'},
-    {id:16,name:'นางลัดดา ใจงาม',role:'กรรมการ',phone:'087-789-0123',photo:'',village:'9'},
-    {id:17,name:'นางสาวอำพร พงษ์ไพร',role:'กรรมการ',phone:'088-890-1234',photo:'',village:'9'},
-    {id:18,name:'นางปราณี สุขสำราญ',role:'กรรมการ',phone:'089-901-2345',photo:'',village:'9'},
-    {id:19,name:'นางวันเพ็ญ ชัยเจริญ',role:'กรรมการ',phone:'081-012-3456',photo:'',village:'9'},
-    {id:20,name:'นางสาวเบญจวรรณ แก้วใส',role:'กรรมการ',phone:'082-123-4567',photo:'',village:'9'},
-    {id:21,name:'นางสมศรี ทำดี',role:'กรรมการ',phone:'083-234-5678',photo:'',village:'9'},
+    {id:1, name:'น.ส.อุไรภรณ์ ทุ่งเย็น',    role:'ประธาน อสม.',    phone:'',village:'9',photo:''},
+    {id:2, name:'นายอลงกรณ์ ซิวสารี',        role:'รองประธาน อสม.', phone:'',village:'9',photo:''},
+    {id:3, name:'นายประยุทธ อุดทังไข',        role:'เลขานุการ',      phone:'',village:'9',photo:''},
+    {id:4, name:'น.ส.พิลาวัลย์ แสงสีจันทร์', role:'เหรัญญิก',      phone:'',village:'9',photo:''},
+    {id:5, name:'นางอุดฮา จันธิมา',           role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:6, name:'นางมาสี ไกลถิ่น',            role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:7, name:'น.ส.พัชริสุดา ทับทิมทอง',    role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:8, name:'นางประนอม วงศ์เก้มูล',       role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:9, name:'นางทองพิน ไกลถิ่น',          role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:10,name:'นางตรุณี ธิเปียง',           role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:11,name:'นางนิล ไกลถิ่น',             role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:12,name:'นางบุญไย อุดทังไข',          role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:13,name:'นางใบ ไกลถิ่น',              role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:14,name:'นางศรีวัย ไกลถิ่น',          role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:15,name:'นางเดือนแรม ไกลถิ่น',        role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:16,name:'นางลำภา โนสุยะ',             role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:17,name:'นางบัวลม ไร่แดง',            role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:18,name:'น.ส.ภนกกร ไกลถิ่น',          role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:19,name:'นางรำพรรณ ดีวังขี',          role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:20,name:'นางศรี อินถากิ้น',            role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
+    {id:21,name:'นายวิชัย ใจเหล็ก',           role:'สมาชิก อสม.',   phone:'',village:'9',photo:''},
   ];
+}
+
+// ============================================================
+// AUTO SEED MEMBERS TO SUPABASE (ถ้า DB ว่างเปล่า)
+// ============================================================
+async function autoSeedMembersIfEmpty() {
+  if (!dbReady) return;
+  try {
+    const { data, error } = await db.from('members').select('id').limit(1);
+    if (error) return; // table doesn't exist yet
+    if (data && data.length > 0) return; // already has data
+
+    const defaults = loadDefaultMembers();
+    showToast('⏳ กำลังเพิ่มรายชื่อ อสม. ทั้ง 21 คนลง Supabase...');
+    for (const m of defaults) {
+      await db.from('members').insert({ name: m.name, role: m.role, phone: m.phone, photo_url: '', village: '9' });
+    }
+    showToast('✅ เพิ่มรายชื่อ อสม. ครบ 21 คนแล้ว กรุณารีเฟรชหน้า');
+  } catch(e) { console.warn('autoSeed error:', e); }
+}
+
+// ============================================================
+// AUTOCOMPLETE HELPER
+// ============================================================
+function setupMemberAutocomplete(inputId, onSelect) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let acList = input.parentNode.querySelector('.autocomplete-list');
+  if (!acList) {
+    input.parentNode.classList.add('autocomplete-wrap');
+    acList = document.createElement('div');
+    acList.className = 'autocomplete-list';
+    acList.style.display = 'none';
+    input.parentNode.appendChild(acList);
+  }
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    acList.innerHTML = '';
+    if (!q) { acList.style.display = 'none'; return; }
+    const filtered = members.filter(m => m.name.toLowerCase().includes(q)).slice(0, 8);
+    if (!filtered.length) { acList.style.display = 'none'; return; }
+    filtered.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.textContent = m.name + (m.role ? ' · ' + m.role : '');
+      item.onclick = () => {
+        input.value = m.name;
+        acList.style.display = 'none';
+        if (onSelect) onSelect(m);
+      };
+      acList.appendChild(item);
+    });
+    acList.style.display = 'block';
+  });
+  document.addEventListener('click', e => { if (!input.contains(e.target)) acList.style.display = 'none'; });
 }
 
 // ============================================================
@@ -3001,17 +3118,21 @@ function renderMosquitoSurvey() {
           + '</div>'
         : '<div style="' + avatarStyle + '">' + initial + '</div>';
 
-      const moveOpts = [1,2,3,4].filter(n => n !== gNum).map(n => '<option value="' + n + '">' + '\u0e01\u0e25\u0e38\u0e48\u0e21 ' + n + '</option>').join('');
+      const moveOpts = [1,2,3,4].filter(n => n !== gNum).map(n => '<option value="' + n + '">ย้ายกลุ่ม ' + n + '</option>').join('');
+      const phoneHtml = m.phone ? '<div class="survey-member-phone">📞 ' + m.phone + '</div>' : '';
 
       return '<div class="survey-member-row">'
         + '<span class="survey-member-num">' + (idx+1) + '</span>'
         + photoHtml
-        + '<span class="survey-member-name" style="flex:1;min-width:0;">' + m.name + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div class="survey-member-name">' + m.name + '</div>'
+        + phoneHtml
+        + '</div>'
         + '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
-        + '<select onchange="moveMosquitoMember(' + g.id + ',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;max-width:80px;">'
-        + '<option value="">\u0e22\u0e49\u0e32\u0e22\u25be</option>' + moveOpts
+        + '<select onchange="moveMosquitoMember(' + g.id + ',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;max-width:72px;">'
+        + '<option value="">ย้าย▾</option>' + moveOpts
         + '</select>'
-        + '<button onclick="removeMosquitoMember(' + g.id + ')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:13px;" title="\u0e25\u0e1a\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e01\u0e25\u0e38\u0e48\u0e21">' + '\uD83D\uDDD1\uFE0F' + '</button>'
+        + '<button onclick="removeMosquitoMember(' + g.id + ')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;" title="ลบออกจากกลุ่ม">🗑️</button>'
         + '</div>'
         + '</div>';
     }).join('');
@@ -3043,15 +3164,63 @@ function openMosquitoAddModal(groupNum) {
 
   const sel = document.getElementById('mosquitoMemberSelect');
   sel.innerHTML = '<option value="">-- เลือก อสม. --</option>' +
-    available.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+    available.map(m => `<option value="${m.id}">${m.name}${m.phone?' ('+m.phone+')':''}</option>`).join('');
+
+  const searchInput = document.getElementById('mosquitoSearchInput');
+  if (searchInput) { searchInput.value = ''; }
+  const acList = document.getElementById('mosquitoAutocompleteList');
+  if (acList) { acList.innerHTML = ''; acList.style.display = 'none'; }
 
   openModal('mosquitoAddModal');
 }
 
+function filterMosquitoMembers(query) {
+  const acList = document.getElementById('mosquitoAutocompleteList');
+  const sel = document.getElementById('mosquitoMemberSelect');
+  if (!acList) return;
+  acList.innerHTML = '';
+
+  const assignedIds = mosquitoSurveyGroups.map(g => String(g.memberId));
+  const available = members.filter(m => !assignedIds.includes(String(m.id)));
+
+  if (!query || !query.trim()) {
+    acList.style.display = 'none';
+    if (sel) sel.value = '';
+    return;
+  }
+
+  const q = query.trim().toLowerCase();
+  const filtered = available.filter(m => m.name.toLowerCase().includes(q) || (m.phone && m.phone.includes(q)));
+
+  if (!filtered.length) {
+    acList.style.display = 'none';
+    return;
+  }
+
+  filtered.slice(0, 8).forEach(m => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = '<strong>' + m.name + '</strong>' + (m.role ? '<span style="color:var(--gray-mid);margin-left:6px;font-size:11px;">' + m.role + '</span>' : '') + (m.phone ? '<div style="font-size:11px;color:var(--green-dark);">📞 ' + m.phone + '</div>' : '');
+    item.onclick = () => {
+      document.getElementById('mosquitoSearchInput').value = m.name;
+      acList.style.display = 'none';
+      if (sel) sel.value = String(m.id);
+    };
+    acList.appendChild(item);
+  });
+  acList.style.display = 'block';
+}
+
 async function saveMosquitoGroupMember() {
-  const memberId = document.getElementById('mosquitoMemberSelect').value;
+  // ตรวจสอบว่าเลือกจาก dropdown หรือพิมพ์ค้นหา
+  let memberId = document.getElementById('mosquitoMemberSelect').value;
+  const searchVal = (document.getElementById('mosquitoSearchInput')?.value || '').trim();
+  if (!memberId && searchVal) {
+    const found = members.find(m => m.name === searchVal || m.name.toLowerCase() === searchVal.toLowerCase());
+    if (found) memberId = String(found.id);
+  }
   const groupNum = parseInt(document.getElementById('mosquitoTargetGroup').value);
-  if (!memberId) { showToast('⚠️ กรุณาเลือกสมาชิก'); return; }
+  if (!memberId) { showToast('⚠️ กรุณาเลือกสมาชิกจากรายการ'); return; }
 
   const existing = mosquitoSurveyGroups.find(g => String(g.memberId) === String(memberId));
   if (existing) { showToast('⚠️ สมาชิกนี้อยู่ในกลุ่มอื่นแล้ว กรุณาลบออกก่อน'); return; }
