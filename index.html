@@ -366,6 +366,7 @@ input[type="file"] { display:none; }
     <button onclick="showPage('actOrder')">📋 ลำดับเข้าร่วม</button>
     <button onclick="showPage('activityPosts')">📰 ข่าวสาร</button>
     <button onclick="showPage('health')">👨‍👩‍👧 สมาชิกลูกป๊อก</button>
+    <button onclick="showPage('mosquitoSurvey')">🦟 กลุ่มสำรวจลูกน้ำยุ่งลาย</button>
     <button onclick="showPage('dashboard')">📊 Dashboard</button>
     <button onclick="showPage('contact')">📞 ติดต่อเรา</button>
   </div>
@@ -1444,14 +1445,42 @@ async function dbUpdateSetting(key, value) {
 }
 
 // ============================================================
+// MOSQUITO SURVEY GROUPS DB
+// ============================================================
+async function dbGetMosquitoGroups() {
+  try {
+    const { data, error } = await db.from('mosquito_survey_groups').select('*').order('group_number').order('id');
+    if (error) throw error;
+    return (data || []).map(r => ({ id: r.id, memberId: r.member_id, groupNumber: r.group_number }));
+  } catch(e) { console.warn('mosquito_survey_groups not found:', e); return []; }
+}
+async function dbAddMosquitoGroupMember(memberId, groupNumber) {
+  const { data, error } = await db.from('mosquito_survey_groups')
+    .insert({ member_id: memberId, group_number: groupNumber })
+    .select().single();
+  if (error) { dbErr('เพิ่มสมาชิกกลุ่ม', error); return null; }
+  return { id: data.id, memberId: data.member_id, groupNumber: data.group_number };
+}
+async function dbDeleteMosquitoGroupMember(id) {
+  const { error } = await db.from('mosquito_survey_groups').delete().eq('id', id);
+  if (error) { dbErr('ลบสมาชิกกลุ่ม', error); return false; }
+  return true;
+}
+async function dbMoveMosquitoGroupMember(id, newGroup) {
+  const { error } = await db.from('mosquito_survey_groups').update({ group_number: newGroup }).eq('id', id);
+  if (error) { dbErr('ย้ายกลุ่ม', error); return false; }
+  return true;
+}
+
+// ============================================================
 // INIT
 // ============================================================
 async function initApp() {
   applyVillageInfoToHeader();
   try {
-    const [membersData, financesData, eventsData, actOrdersData, settingsData, postsData, allHealthData] = await Promise.all([
+    const [membersData, financesData, eventsData, actOrdersData, settingsData, postsData, allHealthData, mosquitoData] = await Promise.all([
       dbGetMembers(), dbGetFinances(), dbGetEvents(), dbGetActOrders(),
-      dbGetSettings(), dbGetActivityPosts(), dbGetAllHealth()
+      dbGetSettings(), dbGetActivityPosts(), dbGetAllHealth(), dbGetMosquitoGroups()
     ]);
     members = membersData.length > 0 ? membersData : loadDefaultMembers();
     finances = financesData;
@@ -1459,6 +1488,7 @@ async function initApp() {
     activityOrders = actOrdersData;
     activityPosts = postsData;
     allHealthMembers = allHealthData;
+    mosquitoSurveyGroups = mosquitoData;
     if (settingsData.marquee_text) document.getElementById('marqueeText').textContent = settingsData.marquee_text;
     const remembered = JSON.parse(localStorage.getItem('asomRemember') || 'null');
     if (remembered?.id) {
@@ -1508,7 +1538,7 @@ function loadDefaultMembers() {
 // ============================================================
 function showPage(page) {
   currentPage = page;
-  const pages = ['home','finance','activities','actOrder','activityPosts','health','dashboard','contact'];
+  const pages = ['home','finance','activities','actOrder','activityPosts','health','mosquitoSurvey','dashboard','contact'];
   document.querySelectorAll('nav button').forEach((b, i) => {
     b.classList.toggle('active', pages[i] === page);
   });
@@ -1526,6 +1556,7 @@ function render() {
   else if (currentPage === 'actOrder')  el.innerHTML = renderActOrder();
   else if (currentPage === 'activityPosts') el.innerHTML = renderActivityPosts();
   else if (currentPage === 'health')    el.innerHTML = loggedInAsom ? renderHealth() : renderHealthLogin();
+  else if (currentPage === 'mosquitoSurvey') el.innerHTML = renderMosquitoSurvey();
   else if (currentPage === 'dashboard') { el.innerHTML = renderDashboard(); setTimeout(initDashboardCharts, 50); }
   else if (currentPage === 'contact')   el.innerHTML = renderContact();
 }
@@ -2944,6 +2975,112 @@ function exportHealthExcel() {
 }
 
 function exportAllExcel() { exportHealthExcel(); }
+
+// ============================================================
+// MOSQUITO SURVEY GROUPS
+// ============================================================
+function renderMosquitoSurvey() {
+  const groupColors = ['group-color-1','group-color-2','group-color-3','group-color-4'];
+  const groupNames = ['กลุ่มที่ 1','กลุ่มที่ 2','กลุ่มที่ 3','กลุ่มที่ 4'];
+
+  const groupCards = [1,2,3,4].map(gNum => {
+    const colorClass = groupColors[gNum-1];
+    const groupMembers = mosquitoSurveyGroups.filter(g => g.groupNumber === gNum);
+    const memberRows = groupMembers.map((g, idx) => {
+      const m = members.find(x => String(x.id) === String(g.memberId));
+      if (!m) return '';
+      const photo = m.photo
+        ? `<img src="${m.photo}" class="survey-member-photo" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('afterbegin','${personIconSVG(40).replace(/`/g,"'").replace(/"/g,'\"')}')">`
+        : personIconSVG(40);
+      return `<div class="survey-member-row">
+        <span class="survey-member-num">${idx+1}</span>
+        ${photo}
+        <span class="survey-member-name">${m.name}</span>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <select onchange="moveMosquitoMember(${g.id}, this.value)" style="font-size:11px;padding:3px 6px;border:1px solid #dde8e1;border-radius:6px;font-family:Sarabun,sans-serif;" title="ย้ายไปกลุ่ม">
+            <option value="">ย้ายกลุ่ม</option>
+            ${[1,2,3,4].filter(n=>n!==gNum).map(n=>`<option value="${n}">กลุ่ม ${n}</option>`).join('')}
+          </select>
+          <button onclick="removeMosquitoMember(${g.id},'${m.name.replace(/'/g,"\'")}')" style="background:#e53e3e;color:white;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;" title="ลบออกจากกลุ่ม">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="survey-group-card">
+      <div class="survey-group-header ${colorClass}" style="color:white;">
+        <span class="survey-group-title" style="color:white;">🦟 ${groupNames[gNum-1]}</span>
+        <span class="survey-group-count" style="color:rgba(255,255,255,.85);">${groupMembers.length} คน</span>
+      </div>
+      <div class="survey-member-list">
+        ${groupMembers.length ? memberRows : '<div style="text-align:center;padding:16px 0;color:var(--gray-mid);font-size:13px;">ยังไม่มีสมาชิกในกลุ่มนี้</div>'}
+      </div>
+      <button class="survey-add-btn" onclick="openMosquitoAddModal(${gNum})">➕ เพิ่มสมาชิกเข้ากลุ่ม</button>
+    </div>`;
+  }).join('');
+
+  const totalAssigned = mosquitoSurveyGroups.length;
+  const totalMembers = members.length;
+
+  return `
+    <p class="section-title">🦟 กลุ่มสำรวจลูกน้ำยุ่งลาย</p>
+    <p class="section-sub">ผังองค์กรกลุ่มสำรวจลูกน้ำยุ่งลาย อสม. บ้านใหม่เจริญไพร หมู่ 9 — มีสมาชิกทั้งหมด ${totalAssigned} คน จาก ${totalMembers} คน</p>
+    <div class="survey-groups-grid">
+      ${groupCards}
+    </div>`;
+}
+
+function openMosquitoAddModal(groupNum) {
+  document.getElementById('mosquitoTargetGroup').value = groupNum;
+  document.getElementById('mosquitoAddModalTitle').textContent = '➕ เพิ่มสมาชิกเข้ากลุ่มที่ ' + groupNum;
+
+  const assignedIds = mosquitoSurveyGroups.map(g => String(g.memberId));
+  const available = members.filter(m => !assignedIds.includes(String(m.id)));
+
+  const sel = document.getElementById('mosquitoMemberSelect');
+  sel.innerHTML = '<option value="">-- เลือก อสม. --</option>' +
+    available.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+  openModal('mosquitoAddModal');
+}
+
+async function saveMosquitoGroupMember() {
+  const memberId = document.getElementById('mosquitoMemberSelect').value;
+  const groupNum = parseInt(document.getElementById('mosquitoTargetGroup').value);
+  if (!memberId) { showToast('⚠️ กรุณาเลือกสมาชิก'); return; }
+
+  const existing = mosquitoSurveyGroups.find(g => String(g.memberId) === String(memberId));
+  if (existing) { showToast('⚠️ สมาชิกนี้อยู่ในกลุ่มอื่นแล้ว กรุณาลบออกก่อน'); return; }
+
+  const result = await dbAddMosquitoGroupMember(parseInt(memberId), groupNum);
+  if (result) {
+    mosquitoSurveyGroups.push(result);
+    closeModal('mosquitoAddModal');
+    showToast('✅ เพิ่มสมาชิกเข้ากลุ่มสำเร็จ');
+    render();
+  }
+}
+
+async function removeMosquitoMember(id, name) {
+  if (!confirm(`ต้องการลบ "${name}" ออกจากกลุ่มหรือไม่?`)) return;
+  const ok = await dbDeleteMosquitoGroupMember(id);
+  if (ok) {
+    mosquitoSurveyGroups = mosquitoSurveyGroups.filter(g => g.id !== id);
+    showToast('✅ ลบสมาชิกออกจากกลุ่มสำเร็จ');
+    render();
+  }
+}
+
+async function moveMosquitoMember(id, newGroupStr) {
+  if (!newGroupStr) return;
+  const newGroup = parseInt(newGroupStr);
+  const ok = await dbMoveMosquitoGroupMember(id, newGroup);
+  if (ok) {
+    const entry = mosquitoSurveyGroups.find(g => g.id === id);
+    if (entry) entry.groupNumber = newGroup;
+    showToast('✅ ย้ายสมาชิกเข้ากลุ่ม ' + newGroup + ' สำเร็จ');
+    render();
+  }
+}
 
 // ============================================================
 // CONTACT
