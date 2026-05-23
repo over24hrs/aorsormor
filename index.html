@@ -310,7 +310,7 @@ input[type="file"] { display:none; }
 </header>
 
 <div class="hero-banner">
-  <img src="village-hero.png" alt="บ้านใหม่เจริญไพร หมู่ 9" onerror="this.parentNode.style.display='none'">
+  <img src="village-hero.jpg" alt="บ้านใหม่เจริญไพร หมู่ 9" onerror="this.parentNode.style.display='none'">
   <div class="hero-banner-overlay">
     <div class="hero-banner-text">
       <h2>🌿 บ้านใหม่เจริญไพร หมู่ 9</h2>
@@ -537,6 +537,29 @@ input[type="file"] { display:none; }
     <div class="form-group mt-4"><label>เบอร์โทร</label><input id="emPhone" placeholder="เบอร์โทร"></div>
     <input type="hidden" id="emId">
     <button class="btn-primary mt-4 w-full" onclick="saveMemberFromModal()">💾 บันทึก</button>
+  </div>
+</div>
+
+<!-- ADD MEMBER MODAL -->
+<div class="modal-overlay" id="addMemberModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addMemberModal')">×</button>
+    <h2>➕ เพิ่มสมาชิก อสม. ใหม่</h2>
+    <div class="form-group"><label>ชื่อ-นามสกุล <span style="color:red">*</span></label><input id="amName" placeholder="เช่น นางสาวสมใจ ใจดี"></div>
+    <div class="form-group mt-4"><label>ตำแหน่ง</label>
+      <select id="amRole" style="width:100%;padding:9px 12px;border:1.5px solid #d1fae5;border-radius:8px;font-family:Sarabun,sans-serif;font-size:14px;">
+        <option value="กรรมการ">กรรมการ</option>
+        <option value="ประธาน อสม.">ประธาน อสม.</option>
+        <option value="รองประธาน">รองประธาน</option>
+        <option value="เลขานุการ">เลขานุการ</option>
+        <option value="เหรัญญิก">เหรัญญิก</option>
+      </select>
+    </div>
+    <div class="form-group mt-4"><label>เบอร์โทร</label><input id="amPhone" placeholder="เช่น 081-234-5678" type="tel"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn-primary w-full" onclick="saveNewMember()">💾 เพิ่มสมาชิก</button>
+      <button onclick="closeModal('addMemberModal')" style="flex:1;padding:9px;border:1.5px solid #ccc;border-radius:8px;cursor:pointer;font-family:Sarabun,sans-serif;background:white;">ยกเลิก</button>
+    </div>
   </div>
 </div>
 
@@ -1001,6 +1024,16 @@ async function dbUpdateMemberPhoto(id, photoUrl) {
   const r2 = await db.from('members').update({ image_url: photoUrl }).eq('id', id);
   if (!r2.error) return true;
   dbErr('อัปเดตรูปภาพ', error); return false;
+}
+async function dbAddMember({ name, role, phone }) {
+  const { data, error } = await db.from('members').insert({ name, role, phone, photo_url: '', village: '9' }).select().single();
+  if (error) { dbErr('เพิ่มสมาชิก', error); return null; }
+  return { id: data.id, name: data.name||'', role: data.role||'', phone: data.phone||'', photo: data.photo_url||'', village: '9' };
+}
+async function dbDeleteMember(id) {
+  const { error } = await db.from('members').delete().eq('id', id);
+  if (error) { dbErr('ลบสมาชิก', error); return false; }
+  return true;
 }
 
 async function dbGetFinances() {
@@ -1467,6 +1500,7 @@ function renderHome() {
     <span class="admin-badge">🔑 โหมดแอดมิน</span>${dbBadge}
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openModal('marqueeEditModal');prepareMarquee()">📢 แก้ไขประกาศ</button>
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openEditVillageModal()">🏘️ แก้ไขข้อมูลหมู่บ้าน</button>
+    <button class="btn-primary" style="font-size:12px;padding:6px 14px;background:#2e7d32;" onclick="openAddMemberModal()">➕ เพิ่มสมาชิก</button>
     <button class="btn-danger" style="font-size:12px;padding:6px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
   </div>` : `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     ${dbBadge}
@@ -1479,8 +1513,12 @@ function renderHome() {
       : `<div class="member-photo"><span style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:var(--green-mid);">${getInitials(m.name)}</span></div>`;
     const editBtn = isAdmin ? `<button class="photo-edit-btn" onclick="event.stopPropagation();document.getElementById('photoFile_${m.id}').click()">✎</button>` : '';
     const body = isAdmin
-      ? `<div style="margin-top:8px;"><button style="background:var(--gold);margin-bottom:6px;border:none;border-radius:6px;padding:4px 10px;color:white;font-size:11px;cursor:pointer;" onclick="event.stopPropagation();openEditMemberModal(${m.id})">✏️ แก้ไข</button>
-         <div class="member-name">${m.name}</div><div class="member-role">${m.role}</div><div class="member-phone">📞 ${m.phone}</div></div>`
+      ? `<div style="margin-top:8px;">
+           <div style="display:flex;gap:4px;justify-content:center;margin-bottom:6px;">
+             <button style="background:var(--gold);border:none;border-radius:6px;padding:4px 10px;color:white;font-size:11px;cursor:pointer;" onclick="event.stopPropagation();openEditMemberModal(${m.id})">✏️ แก้ไข</button>
+             <button style="background:#e53e3e;border:none;border-radius:6px;padding:4px 10px;color:white;font-size:11px;cursor:pointer;" onclick="event.stopPropagation();deleteMember(${m.id},'${m.name.replace(/'/g,"\\'")}')">🗑️ ลบ</button>
+           </div>
+           <div class="member-name">${m.name}</div><div class="member-role">${m.role}</div><div class="member-phone">📞 ${m.phone}</div></div>`
       : `<div class="member-name">${m.name}</div><div class="member-role">${m.role}</div><div class="member-phone">📞 ${m.phone}</div><div class="member-phone-tap">แตะเพื่อดูข้อมูล</div>`;
     return `<div class="member-card" onclick="openMemberDetail(${m.id})">
       <div class="member-photo-wrap">${photo}${editBtn}</div>${body}
@@ -1586,6 +1624,42 @@ function toggleAdmin() {
   const pw = prompt('รหัสผ่านแอดมิน:');
   if (pw === 'admin123') { isAdmin = true; render(); showToast('✅ เข้าสู่โหมดแอดมิน'); }
   else if (pw !== null) showToast('❌ รหัสผ่านไม่ถูกต้อง');
+}
+
+function openAddMemberModal() {
+  document.getElementById('amName').value = '';
+  document.getElementById('amRole').value = 'กรรมการ';
+  document.getElementById('amPhone').value = '';
+  openModal('addMemberModal');
+}
+
+async function saveNewMember() {
+  const name = document.getElementById('amName').value.trim();
+  const role = document.getElementById('amRole').value;
+  const phone = document.getElementById('amPhone').value.trim();
+  if (!name) { showToast('❌ กรุณากรอกชื่อ-นามสกุล'); return; }
+  showToast('⏳ กำลังบันทึก...');
+  const newM = await dbAddMember({ name, role, phone });
+  if (newM) {
+    members.push(newM);
+    closeModal('addMemberModal');
+    render();
+    showToast('✅ เพิ่มสมาชิกสำเร็จ บันทึกลง Supabase แล้ว');
+  } else {
+    showToast('❌ บันทึกไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ');
+  }
+}
+
+async function deleteMember(id, name) {
+  if (!confirm(`ยืนยันลบ "${name}" ออกจากระบบ?\n(ข้อมูลจะถูกลบจาก Supabase ถาวร)`)) return;
+  const ok = await dbDeleteMember(id);
+  if (ok) {
+    members = members.filter(m => m.id !== id);
+    render();
+    showToast('✅ ลบสมาชิกแล้ว');
+  } else {
+    showToast('❌ ลบไม่สำเร็จ');
+  }
 }
 
 function prepareMarquee() {
@@ -2541,6 +2615,36 @@ function renderDashboard() {
         <div style="padding:12px;background:#f3e5f5;border-radius:10px;border-left:4px solid #6a1b9a;"><div style="font-size:12px;color:var(--gray-mid);">หอบหืด</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#6a1b9a;">${data.filter(h=>(h.diseases||[]).includes('หอบหืด')).length} คน</div></div>
         <div style="padding:12px;background:#e8f5e9;border-radius:10px;border-left:4px solid #2e7d32;"><div style="font-size:12px;color:var(--gray-mid);">อัมพฤกษ์/อัมพาต</div><div style="font-family:Kanit,sans-serif;font-size:22px;font-weight:700;color:#2e7d32;">${data.filter(h=>(h.diseases||[]).includes('อัมพฤกษ์')||(h.diseases||[]).includes('อัมพาต')).length} คน</div></div>
       </div>
+    </div>
+
+    <!-- ===== รายงานเช็คชื่อ อสม. ===== -->
+    <div style="background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-top:24px;">
+      <h3 style="font-family:Kanit,sans-serif;font-size:17px;color:var(--green-dark);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+        ✅ รายงานการเช็คชื่อเข้าร่วมกิจกรรม อสม.
+      </h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <div>
+          <label style="font-size:13px;color:var(--gray-mid);display:block;margin-bottom:4px;">เดือน</label>
+          <select id="rptMonth" style="padding:8px 12px;border:1.5px solid #d1fae5;border-radius:8px;font-family:Sarabun,sans-serif;font-size:14px;">
+            ${['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((m,i)=>`<option value="${i+1}" ${i+1===new Date().getMonth()+1?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--gray-mid);display:block;margin-bottom:4px;">ปี (พ.ศ.)</label>
+          <select id="rptYear" style="padding:8px 12px;border:1.5px solid #d1fae5;border-radius:8px;font-family:Sarabun,sans-serif;font-size:14px;">
+            ${[0,1,2].map(offset=>{const y=new Date().getFullYear()+543-offset;return `<option value="${y-543}" ${offset===0?'selected':''}>${y}</option>`;}).join('')}
+          </select>
+        </div>
+        <div style="align-self:flex-end;">
+          <button class="btn-primary" onclick="loadAttendanceReport()" style="padding:8px 20px;">🔍 ดูรายงาน</button>
+        </div>
+        <div style="align-self:flex-end;">
+          <button class="btn-excel" id="btnExportAttendance" onclick="exportAttendanceExcel()" style="display:none;padding:8px 18px;">📥 Export Excel</button>
+        </div>
+      </div>
+      <div id="attendanceReportTable" style="overflow-x:auto;">
+        <p style="color:var(--gray-mid);font-size:13px;text-align:center;padding:20px;">กดปุ่ม "ดูรายงาน" เพื่อแสดงข้อมูล</p>
+      </div>
     </div>`;
 }
 
@@ -2590,6 +2694,169 @@ function initDashboardCharts() {
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'bottom', labels:{font:{family:'Sarabun,sans-serif',size:13},padding:12} } } }
     });
   }
+}
+
+// ============================================================
+// ATTENDANCE REPORT
+// ============================================================
+async function dbGetAllAttendance(year, month) {
+  const start = `${year}-${String(month).padStart(2,'0')}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const end = `${year}-${String(month).padStart(2,'0')}-${lastDay}`;
+  const { data, error } = await db.from('activity_attendance')
+    .select('*')
+    .gte('date', start)
+    .lte('date', end)
+    .order('date');
+  if (error) { console.warn('attendance report:', error.message); return []; }
+  return data;
+}
+
+let _attendanceReportData = { rows: [], activities: [], year: null, month: null };
+
+async function loadAttendanceReport() {
+  const month = parseInt(document.getElementById('rptMonth').value);
+  const year = parseInt(document.getElementById('rptYear').value);
+  const container = document.getElementById('attendanceReportTable');
+  container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray-mid);">⏳ กำลังโหลด...</p>';
+  document.getElementById('btnExportAttendance').style.display = 'none';
+
+  const rawData = await dbGetAllAttendance(year, month);
+
+  if (rawData.length === 0) {
+    container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--gray-mid);">ไม่พบข้อมูลเช็คชื่อในเดือนนี้</p>';
+    return;
+  }
+
+  // unique activities (by activity_name)
+  const actMap = {};
+  rawData.forEach(r => {
+    const key = r.activity_post_id || r.activity_name;
+    if (!actMap[key]) actMap[key] = { id: r.activity_post_id, name: r.activity_name || '-', date: r.date };
+  });
+  const activities = Object.values(actMap).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  // unique อสม.
+  const memberMap = {};
+  rawData.forEach(r => {
+    const key = r.asom_member_id || r.asom_name;
+    if (!memberMap[key]) memberMap[key] = { id: r.asom_member_id, name: r.asom_name || '-' };
+  });
+  // also merge from global members list
+  members.forEach(m => {
+    if (!memberMap[m.id]) memberMap[m.id] = { id: m.id, name: m.name };
+  });
+  const asmList = Object.values(memberMap).filter(m => m.name && m.name !== '-').sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  // build lookup set: "memberId_activityId"
+  const attended = new Set(rawData.map(r => `${r.asom_member_id}_${r.activity_post_id}`));
+  const attendedByName = new Set(rawData.map(r => `${r.asom_name}_${r.activity_name}`));
+
+  // count per member
+  const countPerMember = {};
+  asmList.forEach(m => {
+    countPerMember[m.id || m.name] = activities.filter(a =>
+      attended.has(`${m.id}_${a.id}`) || attendedByName.has(`${m.name}_${a.name}`)
+    ).length;
+  });
+
+  // build table HTML
+  const thaiMonths = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const monthLabel = `${thaiMonths[month]} ${year+543}`;
+
+  const headerCols = activities.map(a =>
+    `<th style="background:var(--green-dark);color:white;padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${a.name}">${a.name.length>18?a.name.slice(0,18)+'…':a.name}<br><span style="font-weight:400;opacity:.8;">${a.date||''}</span></th>`
+  ).join('');
+
+  const bodyRows = asmList.map((m, idx) => {
+    const cells = activities.map(a => {
+      const ok = attended.has(`${m.id}_${a.id}`) || attendedByName.has(`${m.name}_${a.name}`);
+      return ok
+        ? `<td style="text-align:center;padding:7px;background:#e8f5e9;font-size:16px;">✅</td>`
+        : `<td style="text-align:center;padding:7px;color:#ccc;font-size:14px;">—</td>`;
+    }).join('');
+    const cnt = countPerMember[m.id || m.name] || 0;
+    const pct = activities.length > 0 ? Math.round(cnt/activities.length*100) : 0;
+    const barColor = pct >= 80 ? '#2d8a55' : pct >= 50 ? '#f9a825' : '#e53e3e';
+    return `<tr style="${idx%2===0?'background:white':'background:#f9fafb'}">
+      <td style="padding:8px 12px;font-weight:600;font-size:13px;white-space:nowrap;border-right:2px solid var(--green-light);">${idx+1}. ${m.name}</td>
+      ${cells}
+      <td style="text-align:center;padding:8px 10px;font-weight:700;color:${barColor};border-left:2px solid var(--green-light);white-space:nowrap;">${cnt}/${activities.length}<br><span style="font-size:10px;font-weight:500;">${pct}%</span></td>
+    </tr>`;
+  }).join('');
+
+  // summary row
+  const sumCells = activities.map(a => {
+    const cnt = asmList.filter(m => attended.has(`${m.id}_${a.id}`) || attendedByName.has(`${m.name}_${a.name}`)).length;
+    return `<td style="text-align:center;padding:7px;font-weight:700;background:var(--green-pale);color:var(--green-dark);">${cnt}</td>`;
+  }).join('');
+
+  container.innerHTML = `
+    <p style="font-size:13px;color:var(--gray-mid);margin-bottom:10px;">📅 รายงานเดือน <strong>${monthLabel}</strong> — ${activities.length} กิจกรรม, ${asmList.length} อสม.</p>
+    <table style="width:100%;border-collapse:collapse;font-family:Sarabun,sans-serif;font-size:13px;min-width:600px;">
+      <thead>
+        <tr>
+          <th style="background:var(--green-dark);color:white;padding:10px 12px;text-align:left;border-right:2px solid rgba(255,255,255,.3);white-space:nowrap;">ชื่อ อสม.</th>
+          ${headerCols}
+          <th style="background:var(--green-dark);color:white;padding:10px 12px;white-space:nowrap;border-left:2px solid rgba(255,255,255,.3);">รวม / %</th>
+        </tr>
+      </thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot>
+        <tr>
+          <td style="padding:8px 12px;font-weight:700;background:var(--green-pale);color:var(--green-dark);border-right:2px solid var(--green-light);">รวมผู้เข้าร่วม</td>
+          ${sumCells}
+          <td style="background:var(--green-pale);"></td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+  // store for Excel export
+  _attendanceReportData = { rows: asmList, activities, attended, attendedByName, year, month, monthLabel };
+  document.getElementById('btnExportAttendance').style.display = '';
+}
+
+function exportAttendanceExcel() {
+  const { rows, activities, attended, attendedByName, year, month, monthLabel } = _attendanceReportData;
+  if (!rows || rows.length === 0) { showToast('❌ ไม่มีข้อมูลให้ Export'); return; }
+
+  const thaiMonths = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  // header row
+  const headerRow = ['ลำดับ', 'ชื่อ อสม.', ...activities.map(a => `${a.name}${a.date?' ('+a.date+')':''}`), 'รวม (ครั้ง)', 'คิดเป็น (%)'];
+
+  const dataRows = rows.map((m, idx) => {
+    const cells = activities.map(a =>
+      (attended.has(`${m.id}_${a.id}`) || attendedByName.has(`${m.name}_${a.name}`)) ? '✓' : ''
+    );
+    const cnt = cells.filter(c => c === '✓').length;
+    const pct = activities.length > 0 ? `${Math.round(cnt/activities.length*100)}%` : '0%';
+    return [idx+1, m.name, ...cells, cnt, pct];
+  });
+
+  // summary row
+  const sumRow = ['', 'รวมผู้เข้าร่วม', ...activities.map(a =>
+    rows.filter(m => attended.has(`${m.id}_${a.id}`) || attendedByName.has(`${m.name}_${a.name}`)).length
+  ), '', ''];
+
+  const ws = XLSX.utils.aoa_to_sheet([
+    [`รายงานการเช็คชื่อเข้าร่วมกิจกรรม อสม. บ้านใหม่เจริญไพร หมู่ 9`],
+    [`เดือน: ${monthLabel}  |  จำนวนกิจกรรม: ${activities.length}  |  จำนวน อสม.: ${rows.length} คน`],
+    [],
+    headerRow,
+    ...dataRows,
+    [],
+    sumRow
+  ]);
+
+  // column widths
+  ws['!cols'] = [{ wch: 6 }, { wch: 28 }, ...activities.map(() => ({ wch: 18 })), { wch: 12 }, { wch: 12 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `เช็คชื่อ ${thaiMonths[month]} ${year+543}`);
+  const fileName = `รายงานเช็คชื่อ_อสม_${year}${String(month).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast('✅ Export Excel สำเร็จ');
 }
 
 // ============================================================
