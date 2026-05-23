@@ -2609,7 +2609,13 @@ function renderHealthLogin() {
       </div>
       <div id="loginPanel" style="display:none;margin-top:16px;">
         <div class="form-group"><label>รหัสผ่าน</label><div style="position:relative;display:flex;align-items:center;"><input type="password" id="loginPw" placeholder="รหัสผ่าน" style="padding-right:36px;width:100%;" onkeypress="if(event.key==='Enter')doLogin()"><button type="button" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-mid);" onclick="togglePwVis('loginPw',this)">👁</button></div></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;"><input type="checkbox" id="rememberPw" style="width:auto;"><label for="rememberPw" style="font-size:13px;cursor:pointer;margin:0;">จดจำรหัสผ่านในอุปกรณ์นี้</label></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-top:12px;background:#e8f5ee;border-radius:8px;padding:10px 12px;border:1.5px solid var(--green-light);">
+          <input type="checkbox" id="rememberPw" style="width:18px;height:18px;accent-color:var(--green-mid);margin-top:2px;flex-shrink:0;">
+          <div>
+            <label for="rememberPw" style="font-size:13px;cursor:pointer;font-weight:600;color:var(--green-dark);margin:0;display:block;">🌐 จดจำการเข้าสู่ระบบ (ทุกอุปกรณ์)</label>
+            <span style="font-size:11px;color:var(--gray-mid);">บันทึก session ใน Supabase — ล็อกอินได้ทุกเครื่อง นาน 30 วัน</span>
+          </div>
+        </div>
         <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
         <p style="text-align:center;margin-top:10px;"><button onclick="resetAsomPassword()" style="background:none;border:none;color:var(--gray-mid);font-size:12px;cursor:pointer;text-decoration:underline;">ตั้งรหัสผ่านใหม่</button></p>
       </div>
