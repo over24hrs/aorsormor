@@ -430,6 +430,17 @@ input[type="file"] { display:none; }
     <div class="section-box">
       <div class="section-box-title">📋 ข้อมูลพื้นฐาน</div>
       <div class="form-row">
+        <div class="form-group" style="max-width:140px;">
+          <label>คำนำหน้า <span style="color:red">*</span></label>
+          <select id="hPrefix" style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text-main);">
+            <option value="">-- เลือก --</option>
+            <option value="เด็กชาย">เด็กชาย</option>
+            <option value="เด็กหญิง">เด็กหญิง</option>
+            <option value="นาย">นาย</option>
+            <option value="นาง">นาง</option>
+            <option value="นางสาว">นางสาว</option>
+          </select>
+        </div>
         <div class="form-group"><label>ชื่อ <span style="color:red">*</span></label><input id="hFirstName" placeholder="ชื่อ"></div>
         <div class="form-group"><label>นามสกุล <span style="color:red">*</span></label><input id="hLastName" placeholder="นามสกุล"></div>
       </div>
@@ -2588,6 +2599,7 @@ function openAddHealthModal() {
   document.getElementById('editHealthId').value = '';
   const fields = ['hFirstName','hLastName','hAddress','hIdCard','hPhone','hHeight','hWeight','hBMI','hBPSys','hBPDia','hBPPul','hBloodSugar','hHeadSize','hBirthDay','hBirthYear','hDiseaseNote'];
   fields.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('hPrefix').value = '';
   document.getElementById('hGender').value = '';
   document.getElementById('hBirthMonth').value = '';
   document.getElementById('hDisabilityType').value = '';
@@ -2606,7 +2618,19 @@ function openAddHealthModal() {
 function editHealthMember(id) {
   const h = healthMembers.find(x=>x.id===id||String(x.id)===String(id)); if(!h) return;
   document.getElementById('editHealthId').value = h.id;
-  document.getElementById('hFirstName').value = h.firstName||'';
+  // แยกคำนำหน้าออกจาก firstName ถ้ามี
+  const prefixes = ['เด็กชาย','เด็กหญิง','นางสาว','นาง','นาย'];
+  let detectedPrefix = '';
+  let detectedFirstName = h.firstName||'';
+  for (const p of prefixes) {
+    if (detectedFirstName.startsWith(p)) {
+      detectedPrefix = p;
+      detectedFirstName = detectedFirstName.slice(p.length).trim();
+      break;
+    }
+  }
+  document.getElementById('hPrefix').value = detectedPrefix;
+  document.getElementById('hFirstName').value = detectedFirstName;
   document.getElementById('hLastName').value = h.lastName||'';
   document.getElementById('hAddress').value = h.address||'';
   document.getElementById('hIdCard').value = h.idCard||'';
@@ -2643,9 +2667,11 @@ function previewHealthPhoto(e) {
 
 async function saveHealthMember() {
   const editId = document.getElementById('editHealthId').value;
-  const firstName = document.getElementById('hFirstName').value.trim();
+  const prefix = document.getElementById('hPrefix').value;
+  const rawFirstName = document.getElementById('hFirstName').value.trim();
   const lastName = document.getElementById('hLastName').value.trim();
-  if (!firstName) { showToast('❌ กรุณาใส่ชื่อ'); return; }
+  if (!rawFirstName) { showToast('❌ กรุณาใส่ชื่อ'); return; }
+  const firstName = prefix ? prefix + rawFirstName : rawFirstName;
 
   const bpSys = document.getElementById('hBPSys').value.trim();
   const bpDia = document.getElementById('hBPDia').value.trim();
