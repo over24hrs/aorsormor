@@ -578,7 +578,7 @@ input[type="file"] { display:none; }
       </div>
       <div class="form-group" style="margin-bottom:12px;">
         <label>น้ำตาลในเลือด (mg/dL)</label>
-        <input type="number" id="hBloodSugar" placeholder="90">
+        <input type="number" id="hBloodSugar" placeholder="">
       </div>
     </div>
 
@@ -623,9 +623,25 @@ input[type="file"] { display:none; }
 
     <div class="section-box">
       <div class="section-box-title">📷 รูปภาพสมาชิก</div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <img id="hPhotoPreview" src="" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid var(--green-light);background:var(--green-pale);display:none;">
-        <label class="btn-primary photo-upload-label" style="font-size:13px;padding:8px 18px;">📷 เลือกรูปภาพ<input type="file" accept="image/*" onchange="previewHealthPhoto(event)"></label>
+      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+        <div id="hPhotoPreviewWrap" style="width:100px;height:100px;border-radius:12px;border:2.5px dashed var(--green-light);background:var(--green-pale);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative;">
+          <img id="hPhotoPreview" src="" style="width:100%;height:100%;object-fit:cover;display:none;border-radius:10px;">
+          <span id="hPhotoPlaceholder" style="font-size:36px;">👤</span>
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label class="btn-primary photo-upload-label" style="font-size:13px;padding:8px 18px;display:inline-flex;align-items:center;gap:6px;">
+            📷 เลือกรูปภาพ
+            <input type="file" accept="image/*" onchange="previewHealthPhoto(event)">
+          </label>
+          <div id="hPhotoInfo" style="margin-top:8px;font-size:12px;color:var(--gray-mid);line-height:1.6;"></div>
+          <div style="margin-top:6px;font-size:11px;color:var(--gray-mid);">
+            รองรับ JPG, PNG, HEIC<br>
+            ไฟล์ขนาดใหญ่จะถูกบีบอัดอัตโนมัติ
+          </div>
+          <button id="hPhotoClearBtn" onclick="clearHealthPhoto()" style="display:none;margin-top:8px;background:none;border:1.5px solid #ffcdd2;color:#c62828;border-radius:8px;padding:5px 14px;font-family:Sarabun,sans-serif;font-size:12px;cursor:pointer;">
+            🗑️ ลบรูป
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1143,7 +1159,51 @@ async function compressImageToBlob(file, maxWidth, quality) {
     reader.readAsDataURL(file);
   });
 }
+// บีบอัดรูปแบบ multi-pass จนได้ขนาดที่เหมาะสม รองรับไฟล์ใหญ่ทุกขนาด
+async function resizeImageForStorage(file, targetMaxMB) {
+  targetMaxMB = targetMaxMB || 1.5; // เป้าหมายไม่เกิน 1.5 MB หลังบีบ
+  const targetBytes = targetMaxMB * 1024 * 1024;
 
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = () => resolve(null);
+      img.onload = () => {
+        // กำหนด maxWidth ตามขนาดไฟล์ต้นทาง
+        const fileMB = file.size / 1024 / 1024;
+        let maxWidth = 1200;
+        if (fileMB > 10) maxWidth = 800;
+        else if (fileMB > 5)  maxWidth = 1000;
+
+        const canvas = document.createElement('canvas');
+        const ratio  = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // ลด quality ซ้ำจนได้ขนาดที่ต้องการ
+        let quality = 0.85;
+        const tryEncode = () => {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const bytes   = dataUrl.length * 0.75; // ประมาณ base64 → bytes
+          if (bytes <= targetBytes || quality <= 0.25) {
+            resolve(dataUrl);
+          } else {
+            quality = Math.max(quality - 0.1, 0.25);
+            tryEncode();
+          }
+        };
+        tryEncode();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// อัปโหลดไฟล์ไปที่ Supabase Storage และคืน public URL
 // อัปโหลดไฟล์ไปที่ Supabase Storage และคืน public URL
 // ถ้า Storage ไม่พร้อม จะ fallback เป็น base64
 async function uploadMediaToStorage(file) {
@@ -3280,7 +3340,14 @@ function openAddHealthModal() {
   document.getElementById('hBirthMonth').value = '';
   document.getElementById('hBirthYear').value  = '';
   document.getElementById('hDisabilityType').value = '';
-  document.getElementById('hPhotoPreview').style.display = 'none';
+  const prevEl2      = document.getElementById('hPhotoPreview');
+  const placeholder2 = document.getElementById('hPhotoPlaceholder');
+  const clearBtn2    = document.getElementById('hPhotoClearBtn');
+  const infoEl2      = document.getElementById('hPhotoInfo');
+  if (prevEl2)      { prevEl2.src = ''; prevEl2.style.display = 'none'; }
+  if (placeholder2) { placeholder2.style.display = 'block'; }
+  if (clearBtn2)    { clearBtn2.style.display = 'none'; }
+  if (infoEl2)      { infoEl2.innerHTML = ''; }
   document.getElementById('hAgeDisplay').innerHTML = '';
   document.getElementById('bpStatusMsg').innerHTML = '';
   document.getElementById('childHealthFields').style.display = 'none';
@@ -3329,17 +3396,70 @@ function editHealthMember(id) {
   document.getElementById('hBPPul').value = bpParts[2]||h.bpPul||'';
   setBirthDateFromISO(h.birthDate||'');
   setSelectedDiseases(h.diseases||[]);
-  if (h.photo) { document.getElementById('hPhotoPreview').src=h.photo; document.getElementById('hPhotoPreview').style.display='block'; }
-  else document.getElementById('hPhotoPreview').style.display='none';
+  const prevEl      = document.getElementById('hPhotoPreview');
+  const placeholder = document.getElementById('hPhotoPlaceholder');
+  const clearBtn    = document.getElementById('hPhotoClearBtn');
+  const infoEl      = document.getElementById('hPhotoInfo');
+  if (h.photo) {
+    if (prevEl)      { prevEl.src = h.photo; prevEl.style.display = 'block'; }
+    if (placeholder) { placeholder.style.display = 'none'; }
+    if (clearBtn)    { clearBtn.style.display = 'inline-block'; }
+    if (infoEl)      { infoEl.innerHTML = '<span style="color:var(--green-dark);">✅ มีรูปภาพอยู่แล้ว</span>'; }
+  } else {
+    if (prevEl)      { prevEl.src = ''; prevEl.style.display = 'none'; }
+    if (placeholder) { placeholder.style.display = 'block'; }
+    if (clearBtn)    { clearBtn.style.display = 'none'; }
+    if (infoEl)      { infoEl.innerHTML = ''; }
+  }
   updateBPStatus();
   openModal('addHealthModal');
 }
 
 function previewHealthPhoto(e) {
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => { document.getElementById('hPhotoPreview').src=ev.target.result; document.getElementById('hPhotoPreview').style.display='block'; };
-  reader.readAsDataURL(file);
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const infoEl       = document.getElementById('hPhotoInfo');
+  const previewEl    = document.getElementById('hPhotoPreview');
+  const placeholder  = document.getElementById('hPhotoPlaceholder');
+  const clearBtn     = document.getElementById('hPhotoClearBtn');
+  const fileSizeMB   = (file.size / 1024 / 1024).toFixed(2);
+
+  if (infoEl) infoEl.innerHTML = `⏳ กำลังประมวลผล... (${fileSizeMB} MB)`;
+
+  // ใช้ resizeImageForStorage รองรับไฟล์ใหญ่ทุกขนาด
+  resizeImageForStorage(file).then(dataUrl => {
+    if (!dataUrl) {
+      if (infoEl) infoEl.innerHTML = `<span style="color:#c62828;">❌ ประมวลผลไม่สำเร็จ</span>`;
+      return;
+    }
+    // แสดง preview
+    if (previewEl)   { previewEl.src = dataUrl; previewEl.style.display = 'block'; }
+    if (placeholder) { placeholder.style.display = 'none'; }
+    if (clearBtn)    { clearBtn.style.display = 'inline-block'; }
+
+    // คำนวณขนาดหลังบีบอัด
+    const compressedKB = Math.round((dataUrl.length * 0.75) / 1024);
+    const compressedMB = (compressedKB / 1024).toFixed(2);
+    if (infoEl) {
+      infoEl.innerHTML = `
+        <span style="color:var(--green-dark);">✅ พร้อมบันทึก</span><br>
+        ต้นฉบับ: <strong>${fileSizeMB} MB</strong><br>
+        หลังบีบอัด: <strong>${compressedMB} MB</strong>
+      `;
+    }
+  });
+}
+
+function clearHealthPhoto() {
+  const previewEl   = document.getElementById('hPhotoPreview');
+  const placeholder = document.getElementById('hPhotoPlaceholder');
+  const clearBtn    = document.getElementById('hPhotoClearBtn');
+  const infoEl      = document.getElementById('hPhotoInfo');
+  if (previewEl)   { previewEl.src = ''; previewEl.style.display = 'none'; }
+  if (placeholder) { placeholder.style.display = 'block'; }
+  if (clearBtn)    { clearBtn.style.display = 'none'; }
+  if (infoEl)      { infoEl.innerHTML = ''; }
 }
 
 async function saveHealthMember() {
@@ -3372,7 +3492,8 @@ async function saveHealthMember() {
   }
 
   const diseases = getSelectedDiseases();
-  const photoSrc = document.getElementById('hPhotoPreview').src||'';
+  const previewEl = document.getElementById('hPhotoPreview');
+  const photoSrc  = (previewEl && previewEl.style.display !== 'none') ? (previewEl.src || '') : '';
   const bpStatus = bpSys && bpDia ? bpStatusText(bpSys, bpDia) : '';
 
   const data = {
