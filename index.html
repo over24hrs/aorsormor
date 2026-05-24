@@ -11,6 +11,8 @@
 <script>
   const SUPABASE_URL = 'https://nzdbtqdxgkjiqywrnysh.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56ZGJ0cWR4Z2tqaXF5d3JueXNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzU4NDIsImV4cCI6MjA5NDk1MTg0Mn0.SFve344CYSexUqx9EyU4r7MwPr2eMH4c3Q0zh9Vf-vc';
+  const CLOUDINARY_CLOUD_NAME = 'dxyz1234abc';   // ← ใส่ Cloud name ของคุณ
+  const CLOUDINARY_UPLOAD_PRESET = 'asom-media';    // ← ใส่ Upload preset name
 </script>
 <style>
 :root {
@@ -1206,32 +1208,73 @@ async function resizeImageForStorage(file, targetMaxMB) {
 // อัปโหลดไฟล์ไปที่ Supabase Storage และคืน public URL
 // อัปโหลดไฟล์ไปที่ Supabase Storage และคืน public URL
 // ถ้า Storage ไม่พร้อม จะ fallback เป็น base64
+// ============================================================
+// CLOUDINARY UPLOAD (แทนที่ Supabase Storage)
+// ============================================================
 async function uploadMediaToStorage(file) {
+  // --- ลอง Cloudinary ก่อน ---
   try {
-    const ext = file.type.startsWith('video/') ? (file.name.split('.').pop() || 'mp4') : 'jpg';
-    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,6)}.${ext}`;
-    let uploadFile = file;
-    if (file.type.startsWith('image/')) {
-      const blob = await compressImageToBlob(file, 1200, 0.85);
-      if (blob) uploadFile = new File([blob], fileName, { type: 'image/jpeg' });
-    }
-    const { data, error } = await db.storage.from('activity-media').upload(fileName, uploadFile, {
-      cacheControl: '3600',
-      upsert: false
-    });
-    if (error) throw error;
-    const { data: urlData } = db.storage.from('activity-media').getPublicUrl(data.path);
-    return { url: urlData.publicUrl, isStorage: true };
-  } catch(storageErr) {
-    console.warn('Supabase Storage upload failed, falling back to base64:', storageErr);
-    try {
-      if (file.type.startsWith('image/')) {
-        const b64 = await resizeImage(file, 900, 0.78);
-        return { url: b64, isStorage: false };
-      }
-    } catch(e2) {}
-    return null;
+    const result = await uploadToCloudinary(file);
+    if (result) return result;
+  } catch (e) {
+    console.warn('Cloudinary upload failed, trying base64 fallback:', e);
   }
+
+  // --- Fallback: base64 (เฉพาะรูปภาพขนาดเล็ก) ---
+  try {
+    if (file.type.startsWith('image/')) {
+      const b64 = await resizeImage(file, 900, 0.78);
+      return { url: b64, isStorage: false };
+    }
+  } catch (e2) {
+    console.warn('base64 fallback failed:', e2);
+  }
+  return null;
+}
+
+async function uploadToCloudinary(file) {
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  if (!isImage && !isVideo) return null;
+
+  // บีบอัดรูปก่อนอัปโหลด (ประหยัด bandwidth)
+  let uploadFile = file;
+  if (isImage) {
+    const blob = await compressImageToBlob(file, 1200, 0.85);
+    if (blob) uploadFile = new File([blob], file.name || 'photo.jpg', { type: 'image/jpeg' });
+  }
+
+  const formData = new FormData();
+  formData.append('file', uploadFile);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', 'asom-media');
+
+  // resource_type: image หรือ video
+  const resourceType = isVideo ? 'video' : 'image';
+  const apiUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Cloudinary error ${response.status}: ${errText}`);
+  }
+
+  const data = await response.json();
+
+  // คืน secure_url (https) เสมอ
+  return {
+    url: data.secure_url,
+    publicId: data.public_id,
+    isStorage: true,
+    width: data.width || null,
+    height: data.height || null,
+    format: data.format || '',
+    resourceType: data.resource_type || resourceType
+  };
 }
 
 function getYoutubeId(url) {
@@ -2325,15 +2368,20 @@ async function saveMemberFromModal() {
 async function uploadMemberPhoto(id) {
   const fileEl = document.getElementById('photoFile_' + id);
   const file = fileEl?.files[0]; if (!file) return;
-  showToast('⏳ กำลังประมวลผลรูปภาพ...');
+  showToast('⏳ กำลังอัปโหลดรูปภาพ...');
   try {
-    const photoUrl = await resizeImage(file, 220, 0.82);
+    // อัปโหลดไป Cloudinary (หรือ fallback base64)
+    const result = await uploadToCloudinary(file);
+    const photoUrl = result?.url || await resizeImage(file, 220, 0.82);
     const m = members.find(x => x.id === id);
     if (m) m.photo = photoUrl;
     render();
     const ok = await dbUpdateMemberPhoto(id, photoUrl);
-    if (ok) showToast('✅ อัปเดตรูปภาพแล้ว');
-  } catch(e) { showToast('❌ ประมวลผลรูปไม่สำเร็จ'); }
+    if (ok) showToast('✅ อัปเดตรูปภาพ Cloudinary แล้ว');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ อัปโหลดรูปไม่สำเร็จ');
+  }
 }
 
 function toggleAdmin() {
@@ -3493,7 +3541,28 @@ async function saveHealthMember() {
 
   const diseases = getSelectedDiseases();
   const previewEl = document.getElementById('hPhotoPreview');
-  const photoSrc  = (previewEl && previewEl.style.display !== 'none') ? (previewEl.src || '') : '';
+let photoSrc = '';
+if (previewEl && previewEl.style.display !== 'none' && previewEl.src) {
+  const rawSrc = previewEl.src;
+  // ถ้าเป็น base64 (รูปใหม่ที่เพิ่งเลือก) → อัปโหลด Cloudinary
+  if (rawSrc.startsWith('data:image/')) {
+    showToast('⏳ กำลังอัปโหลดรูปสมาชิก...');
+    try {
+      const blob = await (async () => {
+        const res = await fetch(rawSrc);
+        return await res.blob();
+      })();
+      const tmpFile = new File([blob], 'member-photo.jpg', { type: 'image/jpeg' });
+      const uploadResult = await uploadToCloudinary(tmpFile);
+      photoSrc = uploadResult?.url || rawSrc;
+    } catch (uploadErr) {
+      console.warn('Photo upload failed, using base64:', uploadErr);
+      photoSrc = rawSrc; // fallback ใช้ base64
+    }
+  } else if (rawSrc !== window.location.href) {
+    photoSrc = rawSrc; // URL ที่มีอยู่แล้ว (จากการแก้ไข)
+  }
+}
   const bpStatus = bpSys && bpDia ? bpStatusText(bpSys, bpDia) : '';
 
   const data = {
