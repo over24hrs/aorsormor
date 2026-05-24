@@ -2321,61 +2321,80 @@ function saveVillageInfo() {
 // FINANCE
 // ============================================================
 function renderFinance() {
-  // ถ้าไม่ใช่ Admin แสดงหน้าบล็อก
-  if (!isAdmin) {
-    return `
-      <p class="section-title">💰 รายรับ-รายจ่าย</p>
-      <div style="text-align:center;padding:60px 20px;max-width:400px;margin:0 auto;">
-        <div style="font-size:72px;margin-bottom:20px;">🔒</div>
-        <h2 style="font-family:Kanit,sans-serif;font-size:20px;color:var(--green-dark);margin-bottom:8px;">เฉพาะผู้ดูแลระบบเท่านั้น</h2>
-        <p style="color:var(--gray-mid);font-size:14px;margin-bottom:28px;line-height:1.6;">หน้านี้สามารถเข้าถึงได้เฉพาะโหมดแอดมิน<br>กรุณาเข้าสู่โหมดแอดมินก่อนใช้งาน</p>
-        <button class="btn-primary" style="padding:12px 32px;font-size:15px;" onclick="toggleAdmin()">🔑 เข้าสู่โหมดแอดมิน</button>
-      </div>`;
-  }
-
   const income = finances.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount),0);
   const expense = finances.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount),0);
   const balance = income - expense;
+
+  // แถวตาราง: แอดมินเห็นปุ่มแก้ไข/ลบ, สมาชิกทั่วไปไม่เห็น
   const rows = finances.map(f => `<tr>
     <td>${formatThaiDate(f.date)}</td>
     <td><span class="badge-${f.type}">${f.type==='income'?'รายรับ':'รายจ่าย'}</span></td>
-    <td>${f.category}</td><td>${f.desc||'-'}</td>
+    <td>${f.category}</td>
+    <td>${f.desc||'-'}</td>
     <td style="text-align:right;font-weight:600;color:${f.type==='income'?'#2e7d32':'#c62828'};">${Number(f.amount).toLocaleString('th')} ฿</td>
-    <td><button class="btn-edit" onclick="editFinance(${f.id})">แก้ไข</button> <button class="btn-danger" onclick="deleteFinance(${f.id})">ลบ</button></td>
-  </tr>`).join('');
+    ${isAdmin
+      ? `<td><button class="btn-edit" onclick="editFinance(${f.id})">แก้ไข</button> <button class="btn-danger" onclick="deleteFinance(${f.id})">ลบ</button></td>`
+      : `<td style="text-align:center;color:var(--gray-mid);font-size:12px;">—</td>`
+    }
+  </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-mid);">ยังไม่มีรายการ</td></tr>`;
+
+  // แถบสถานะบนสุด: แอดมินเห็นปุ่มจัดการ, สมาชิกเห็นแค่ข้อความแจ้งเตือน
+  const topBar = isAdmin
+    ? `<div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="background:var(--gold);color:white;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;">🔑 โหมดแอดมิน</span>
+        <span style="font-size:13px;color:#7a5500;">คุณกำลังจัดการข้อมูลการเงินในฐานะผู้ดูแลระบบ</span>
+        <button class="btn-danger" style="margin-left:auto;font-size:12px;padding:5px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
+      </div>`
+    : `<div style="background:var(--green-pale);border:1.5px solid var(--green-light);border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:20px;">👁️</span>
+        <span style="font-size:13px;color:var(--green-dark);">คุณกำลังดูข้อมูลการเงินในโหมดอ่านอย่างเดียว — การเพิ่ม/แก้ไข/ลบทำได้เฉพาะแอดมิน</span>
+        <button onclick="toggleAdmin()" style="margin-left:auto;background:none;border:1.5px solid var(--green-mid);border-radius:8px;padding:5px 14px;cursor:pointer;font-family:Sarabun,sans-serif;font-size:12px;color:var(--green-dark);">🔑 เข้าสู่โหมดแอดมิน</button>
+      </div>`;
+
+  // ฟอร์มเพิ่ม/แก้ไข: แสดงเฉพาะแอดมิน
+  const finForm = isAdmin
+    ? `<div class="fin-form">
+        <h3 id="finFormTitle">${editingFinId ? '✏️ แก้ไขรายการ' : '➕ เพิ่มรายการ'}</h3>
+        <div class="form-row">
+          <div class="form-group"><label>ประเภท</label><select id="finType"><option value="income">รายรับ</option><option value="expense">รายจ่าย</option></select></div>
+          <div class="form-group"><label>วันที่</label><input type="date" id="finDate" value="${new Date().toISOString().split('T')[0]}"></div>
+          <div class="form-group"><label>จำนวนเงิน (฿)</label><input type="number" id="finAmount" placeholder="0.00"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>หมวดหมู่</label><select id="finCategory"><option>เงินอุดหนุน</option><option>เงินบริจาค</option><option>ค่าวัสดุ</option><option>ค่าเดินทาง</option><option>ค่าอาหาร</option><option>อื่นๆ</option></select></div>
+          <div class="form-group"><label>รายละเอียด</label><input id="finDesc" placeholder="รายละเอียด..."></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-primary" onclick="saveFinance()">💾 บันทึก</button>
+          ${editingFinId ? '<button class="btn-danger" onclick="cancelEditFinance()">ยกเลิก</button>' : ''}
+        </div>
+      </div>`
+    : '';
+
+  // หัวตาราง: แอดมินมีคอลัมน์ "จัดการ", สมาชิกไม่มี
+  const tableHead = isAdmin
+    ? `<tr><th>วันที่</th><th>ประเภท</th><th>หมวด</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>จัดการ</th></tr>`
+    : `<tr><th>วันที่</th><th>ประเภท</th><th>หมวด</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th></th></tr>`;
+
   return `
     <p class="section-title">💰 รายรับ-รายจ่าย</p>
     <p class="section-sub">บัญชีการเงินกลุ่ม อสม. บ้านใหม่เจริญไพร</p>
-    <div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <span style="background:var(--gold);color:white;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;">🔑 โหมดแอดมิน</span>
-      <span style="font-size:13px;color:#7a5500;">คุณกำลังดูข้อมูลการเงินในฐานะผู้ดูแลระบบ</span>
-      <button class="btn-danger" style="margin-left:auto;font-size:12px;padding:5px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
-    </div>
+    ${topBar}
     <div class="finance-summary">
       <div class="fin-card"><div class="label">รายรับรวม</div><div class="amount income">${income.toLocaleString('th')} ฿</div></div>
       <div class="fin-card"><div class="label">รายจ่ายรวม</div><div class="amount expense">${expense.toLocaleString('th')} ฿</div></div>
       <div class="fin-card"><div class="label">คงเหลือ</div><div class="amount" style="color:${balance>=0?'var(--green-dark)':'#c62828'}">${balance.toLocaleString('th')} ฿</div></div>
     </div>
-    <div class="fin-form">
-      <h3 id="finFormTitle">${editingFinId ? '✏️ แก้ไขรายการ' : '➕ เพิ่มรายการ'}</h3>
-      <div class="form-row">
-        <div class="form-group"><label>ประเภท</label><select id="finType"><option value="income">รายรับ</option><option value="expense">รายจ่าย</option></select></div>
-        <div class="form-group"><label>วันที่</label><input type="date" id="finDate" value="${new Date().toISOString().split('T')[0]}"></div>
-        <div class="form-group"><label>จำนวนเงิน (฿)</label><input type="number" id="finAmount" placeholder="0.00"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>หมวดหมู่</label><select id="finCategory"><option>เงินอุดหนุน</option><option>เงินบริจาค</option><option>ค่าวัสดุ</option><option>ค่าเดินทาง</option><option>ค่าอาหาร</option><option>อื่นๆ</option></select></div>
-        <div class="form-group"><label>รายละเอียด</label><input id="finDesc" placeholder="รายละเอียด..."></div>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button class="btn-primary" onclick="saveFinance()">💾 บันทึก</button>
-        ${editingFinId ? '<button class="btn-danger" onclick="cancelEditFinance()">ยกเลิก</button>' : ''}
-      </div>
-    </div>
+    ${finForm}
     <div class="fin-form" style="margin-bottom:16px;display:flex;justify-content:flex-end;">
       <button class="btn-excel" onclick="exportFinanceExcel()">📊 Export Excel</button>
     </div>
-    <div class="fin-table"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>หมวด</th><th>รายละเอียด</th><th style="text-align:right">จำนวน</th><th>จัดการ</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    <div class="fin-table">
+      <table>
+        <thead>${tableHead}</thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 async function saveFinance() {
