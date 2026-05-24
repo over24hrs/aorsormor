@@ -252,9 +252,9 @@ main { max-width:1200px; margin:0 auto; padding:24px 16px; }
 /* HEALTH FORM - disease checkboxes */
 .disease-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
 @media(max-width:480px) { .disease-grid { grid-template-columns:repeat(2,1fr); } }
-.disease-check { display:flex; align-items:center; gap:6px; padding:6px 10px; border:1.5px solid #dde8e1; border-radius:8px; cursor:pointer; transition:.15s; font-size:13px; }
+.disease-check { display:flex; align-items:center; gap:6px; padding:6px 10px; border:1.5px solid #dde8e1; border-radius:8px; cursor:pointer; transition:.15s; font-size:13px; user-select:none; }
 .disease-check:hover { border-color:var(--green-light); background:var(--green-pale); }
-.disease-check input[type="checkbox"] { width:16px; height:16px; accent-color:var(--green-mid); flex-shrink:0; }
+.disease-check input[type="checkbox"] { width:16px; height:16px; accent-color:var(--green-mid); flex-shrink:0; pointer-events:none; }
 .disease-check.checked { border-color:var(--green-mid); background:var(--green-pale); font-weight:600; color:var(--green-dark); }
 
 /* STATUS */
@@ -501,8 +501,10 @@ input[type="file"] { display:none; }
       <div class="form-group">
         <label>วันเดือนปีเกิด (พ.ศ.)</label>
         <div style="display:grid;grid-template-columns:1fr 2fr 1.5fr;gap:8px;align-items:center;">
-          <input type="number" id="hBirthDay" placeholder="วัน" min="1" max="31" oninput="calcAgeFromBirth()" style="text-align:center;">
-          <select id="hBirthMonth" onchange="calcAgeFromBirth()">
+          <select id="hBirthDay" onchange="calcAgeFromBirth()" style="padding:8px 6px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;text-align:center;">
+            <option value="">-- วัน --</option>
+          </select>
+          <select id="hBirthMonth" onchange="calcAgeFromBirth()" style="padding:8px 6px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;">
             <option value="">-- เดือน --</option>
             <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
             <option value="3">มีนาคม</option><option value="4">เมษายน</option>
@@ -511,7 +513,9 @@ input[type="file"] { display:none; }
             <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
             <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
           </select>
-          <input type="number" id="hBirthYear" placeholder="ปี พ.ศ." min="2400" max="2580" oninput="calcAgeFromBirth()" style="text-align:center;">
+          <select id="hBirthYear" onchange="calcAgeFromBirth()" style="padding:8px 6px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;text-align:center;">
+            <option value="">-- ปี พ.ศ. --</option>
+          </select>
         </div>
         <div id="hAgeDisplay" style="margin-top:6px;"></div>
       </div>
@@ -519,10 +523,19 @@ input[type="file"] { display:none; }
 
     <div class="section-box">
       <div class="section-box-title">💊 ข้อมูลสุขภาพ</div>
-      <div class="form-row">
-        <div class="form-group"><label>ส่วนสูง (ซม.)</label><input type="number" id="hHeight" placeholder="170" oninput="calcBMI()"></div>
-        <div class="form-group"><label>น้ำหนัก (กก.)</label><input type="number" id="hWeight" placeholder="60" oninput="calcBMI()"></div>
-        <div class="form-group"><label>ค่า BMI</label><input id="hBMI" placeholder="อัตโนมัติ" readonly style="background:#f5f7f6;"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>ส่วนสูง (ซม.)</label>
+          <input type="number" id="hHeight" placeholder="" oninput="calcBMI()" style="width:100%;">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>น้ำหนัก (กก.)</label>
+          <input type="number" id="hWeight" placeholder="" oninput="calcBMI()" style="width:100%;">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>ค่า BMI <span style="font-size:11px;color:var(--gray-mid);">(คำนวณอัตโนมัติ)</span></label>
+          <input id="hBMI" placeholder="" readonly style="background:#f5f7f6;width:100%;">
+        </div>
       </div>
       <div id="childHealthFields" style="display:none;">
         <div style="background:#e3f2fd;border-radius:8px;padding:12px 14px;margin-bottom:12px;border:1px solid #90caf9;">
@@ -547,17 +560,17 @@ input[type="file"] { display:none; }
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
           <div class="form-group" style="margin:0;">
             <label style="font-size:12px;font-weight:600;color:#c62828;">SYS (ค่าตัวบน)</label>
-            <input type="number" id="hBPSys" placeholder="เช่น 120" min="40" max="300" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#ef9a9a;">
+            <input type="number" id="hBPSys" placeholder="" min="40" max="300" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#ef9a9a;">
             <div style="font-size:10px;color:var(--gray-mid);margin-top:3px;">แรงดันขณะหัวใจบีบตัว (mmHg)</div>
           </div>
           <div class="form-group" style="margin:0;">
             <label style="font-size:12px;font-weight:600;color:#1565c0;">DIA (ค่าตัวล่าง)</label>
-            <input type="number" id="hBPDia" placeholder="เช่น 80" min="20" max="200" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#90caf9;">
+            <input type="number" id="hBPDia" placeholder="" min="20" max="200" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#90caf9;">
             <div style="font-size:10px;color:var(--gray-mid);margin-top:3px;">แรงดันขณะหัวใจคลายตัว (mmHg)</div>
           </div>
           <div class="form-group" style="margin:0;">
             <label style="font-size:12px;font-weight:600;color:#6a1b9a;">PUL (ชีพจร)</label>
-            <input type="number" id="hBPPul" placeholder="เช่น 75" min="20" max="250" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#ce93d8;">
+            <input type="number" id="hBPPul" placeholder="" min="20" max="250" oninput="updateBPStatus()" style="text-align:center;font-size:16px;font-weight:700;border-color:#ce93d8;">
             <div style="font-size:10px;color:var(--gray-mid);margin-top:3px;">อัตราการเต้นหัวใจ (ครั้ง/นาที)</div>
           </div>
         </div>
@@ -889,6 +902,30 @@ function personIconSVG(size) {
   </div>`;
 }
 
+function populateBirthDropdowns() {
+  // เติม dropdown วัน 1-31
+  const dayEl = document.getElementById('hBirthDay');
+  if (dayEl && dayEl.options.length <= 1) {
+    for (let d = 1; d <= 31; d++) {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d + ' วัน';
+      dayEl.appendChild(opt);
+    }
+  }
+  // เติม dropdown ปี พ.ศ. ย้อนหลัง 120 ปี
+  const yearEl = document.getElementById('hBirthYear');
+  if (yearEl && yearEl.options.length <= 1) {
+    const currentBE = new Date().getFullYear() + 543;
+    for (let y = currentBE; y >= currentBE - 120; y--) {
+      const opt = document.createElement('option');
+      opt.value = y - 543; // เก็บเป็น CE
+      opt.textContent = y + ' พ.ศ.';
+      yearEl.appendChild(opt);
+    }
+  }
+}
+
 function calcAgeFromBirth() {
   const dayEl   = document.getElementById('hBirthDay');
   const monEl   = document.getElementById('hBirthMonth');
@@ -897,13 +934,12 @@ function calcAgeFromBirth() {
   const childFields = document.getElementById('childHealthFields');
   if (!ageEl) return;
 
-  const day  = parseInt(dayEl?.value)  || 0;
-  const mon  = parseInt(monEl?.value)  || 0;
-  const beYear = parseInt(yearEl?.value) || 0;
+  const day    = parseInt(dayEl?.value)  || 0;
+  const mon    = parseInt(monEl?.value)  || 0;
+  const ceYear = parseInt(yearEl?.value) || 0; // yearEl เก็บค่า CE แล้ว
 
-  if (!beYear || beYear < 2400) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
+  if (!ceYear || ceYear < 1857) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
 
-  const ceYear = beYear - 543;
   const birth = new Date(ceYear, mon > 0 ? mon - 1 : 0, day > 0 ? day : 1);
   const today = new Date();
 
@@ -933,9 +969,8 @@ function calcAgeFromBirth() {
 function getBirthDateISO() {
   const day    = parseInt(document.getElementById('hBirthDay')?.value)  || 0;
   const mon    = parseInt(document.getElementById('hBirthMonth')?.value) || 0;
-  const beYear = parseInt(document.getElementById('hBirthYear')?.value)  || 0;
-  if (!beYear || beYear < 2400) return null;
-  const ceYear = beYear - 543;
+  const ceYear = parseInt(document.getElementById('hBirthYear')?.value)  || 0; // เก็บค่า CE แล้ว
+  if (!ceYear || ceYear < 1857) return null;
   const mm = String(mon || 1).padStart(2, '0');
   const dd = String(day || 1).padStart(2, '0');
   return `${ceYear}-${mm}-${dd}`;
@@ -943,6 +978,7 @@ function getBirthDateISO() {
 
 function setBirthDateFromISO(iso) {
   if (!iso) return;
+  populateBirthDropdowns(); // ต้องมีตัวเลือกก่อนเซ็ตค่า
   const parts = iso.split('-');
   if (parts.length < 3) return;
   const ceYear = parseInt(parts[0]);
@@ -951,9 +987,9 @@ function setBirthDateFromISO(iso) {
   const dayEl  = document.getElementById('hBirthDay');
   const monEl  = document.getElementById('hBirthMonth');
   const yearEl = document.getElementById('hBirthYear');
-  if (dayEl)  dayEl.value  = day;
-  if (monEl)  monEl.value  = mon;
-  if (yearEl) yearEl.value = ceYear + 543;
+  if (dayEl)  dayEl.value  = day;       // dropdown value = day (1-31)
+  if (monEl)  monEl.value  = mon;       // dropdown value = mon (1-12)
+  if (yearEl) yearEl.value = ceYear;    // dropdown value = ceYear
   calcAgeFromBirth();
 }
 
@@ -997,20 +1033,28 @@ function updateBPStatus() {
   </div>`;
 }
 
-function toggleDisease(label, value) {
+function toggleDisease(label) {
+  // label อาจเป็น element หรือ event ก็ได้ — normalize
+  if (label && label.target) label = label.target.closest('label.disease-check');
+  if (!label) return;
   const cb = label.querySelector('input[type="checkbox"]');
-  cb.checked = !cb.checked;
+  if (!cb) return;
   label.classList.toggle('checked', cb.checked);
-  const disabilityFields = document.getElementById('disabilityFields');
   const selectedDiseases = getSelectedDiseases();
-  if (disabilityFields) {
-    disabilityFields.style.display = selectedDiseases.includes('พิการ') ? 'block' : 'none';
-  }
+  const disabilityFields = document.getElementById('disabilityFields');
+  if (disabilityFields) disabilityFields.style.display = selectedDiseases.includes('พิการ') ? 'block' : 'none';
   const otherField = document.getElementById('diseaseOtherField');
-  if (otherField) {
-    otherField.style.display = selectedDiseases.includes('อื่นๆ') ? 'block' : 'none';
-  }
+  if (otherField) otherField.style.display = selectedDiseases.includes('อื่นๆ') ? 'block' : 'none';
 }
+
+// ผูก event กับ #diseaseGrid ทันทีเมื่อ DOM พร้อม
+document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('change', e => {
+    if (e.target.matches('#diseaseGrid input[type="checkbox"]')) {
+      toggleDisease(e.target.closest('label.disease-check'));
+    }
+  });
+});
 
 function getSelectedDiseases() {
   const checks = document.querySelectorAll('#diseaseGrid input[type="checkbox"]');
@@ -3227,11 +3271,14 @@ async function logoutHealth() {
 
 function openAddHealthModal() {
   document.getElementById('editHealthId').value = '';
-  const fields = ['hFirstName','hLastName','hAddress','hIdCard','hPhone','hHeight','hWeight','hBMI','hBPSys','hBPDia','hBPPul','hBloodSugar','hHeadSize','hBirthDay','hBirthYear','hDiseaseNote'];
+  populateBirthDropdowns(); // เติม dropdown วัน/ปีก่อนรีเซ็ต
+  const fields = ['hFirstName','hLastName','hAddress','hIdCard','hPhone','hHeight','hWeight','hBMI','hBPSys','hBPDia','hBPPul','hBloodSugar','hHeadSize','hDiseaseNote'];
   fields.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('hPrefix').value = '';
   document.getElementById('hGender').value = '';
+  document.getElementById('hBirthDay').value   = '';
   document.getElementById('hBirthMonth').value = '';
+  document.getElementById('hBirthYear').value  = '';
   document.getElementById('hDisabilityType').value = '';
   document.getElementById('hPhotoPreview').style.display = 'none';
   document.getElementById('hAgeDisplay').innerHTML = '';
