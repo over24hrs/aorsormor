@@ -1020,35 +1020,75 @@ function updateBPStatus() {
 
   if (!sys && !dia) { msg.innerHTML = ''; return; }
 
-  let bpClass = '', bpColor = '', bpBg = '', bpIcon = '';
+  // ---- จำแนกระดับความดันตามตารางมาตรฐาน ----
+  let bpIcon = '', bpLabel = '', bpColor = '', bpBg = '', bpAdvice = '';
+
   if (sys < 90 || dia < 60) {
-    bpClass='ความดันต่ำ'; bpColor='#1565c0'; bpBg='#e3f2fd'; bpIcon='⬇️';
-  } else if (sys > 180 || dia > 120) {
-    bpClass='ความดันวิกฤต ‼️ ควรพบแพทย์ทันที'; bpColor='#b71c1c'; bpBg='#ffebee'; bpIcon='🚨';
-  } else if (sys >= 140 || dia >= 90) {
-    bpClass='ความดันสูงระดับ 2'; bpColor='#c62828'; bpBg='#ffebee'; bpIcon='🔴';
-  } else if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89)) {
-    bpClass='ความดันสูงระดับ 1'; bpColor='#e65100'; bpBg='#fff3e0'; bpIcon='🟠';
-  } else if (sys >= 120 && sys <= 129 && dia < 80) {
-    bpClass='ความดันสูงขอบเขต (Elevated)'; bpColor='#f57f17'; bpBg='#fffde7'; bpIcon='🟡';
+    bpIcon = '⬇️'; bpLabel = 'ความดันต่ำ';
+    bpColor = '#1565c0'; bpBg = '#e3f2fd';
+    bpAdvice = 'ดื่มน้ำให้เพียงพอ หลีกเลี่ยงการลุกขึ้นเร็ว ปรึกษาแพทย์หากมีอาการเวียนหัว';
+  } else if (sys < 120 && dia < 80) {
+    bpIcon = '🟢'; bpLabel = 'เหมาะสม (ปกติ)';
+    bpColor = '#1b5e20'; bpBg = '#e8f5e9';
+    bpAdvice = 'ควบคุมอาหาร ออกกำลังกาย และวัดความดันสม่ำเสมอ';
+  } else if (sys >= 120 && sys <= 129 && dia >= 80 && dia <= 84) {
+    bpIcon = '🟡'; bpLabel = 'ปกติ (120–129/80–84)';
+    bpColor = '#f9a825'; bpBg = '#fffde7';
+    bpAdvice = 'ดูแลสุขภาพต่อเนื่อง ลดเค็ม ออกกำลังกายสม่ำเสมอ';
+  } else if (sys >= 130 && sys <= 139 && dia >= 85 && dia <= 89) {
+    bpIcon = '🟠'; bpLabel = 'สูงกว่าปกติ (130–139/85–89)';
+    bpColor = '#e65100'; bpBg = '#fff3e0';
+    bpAdvice = 'ปรึกษาแพทย์ ปรับพฤติกรรมสุขภาพ ลดเค็ม ลดความเครียด';
+  } else if ((sys >= 140 && sys <= 159) || (dia >= 90 && dia <= 99)) {
+    bpIcon = '🔴'; bpLabel = 'ความดันสูง ระยะเริ่มแรก (140–159/90–99)';
+    bpColor = '#c62828'; bpBg = '#ffebee';
+    bpAdvice = 'พบแพทย์เพื่อวินิจฉัยและรับการรักษา';
+  } else if ((sys >= 160 && sys <= 179) || (dia >= 100 && dia <= 109)) {
+    bpIcon = '🔴'; bpLabel = 'ความดันสูง ระยะปานกลาง (160–179/100–109)';
+    bpColor = '#b71c1c'; bpBg = '#ffcdd2';
+    bpAdvice = 'พบแพทย์โดยเร็ว เสี่ยงหัวใจทำงานหนัก';
+  } else if (sys >= 180 || dia >= 110) {
+    bpIcon = '🚨'; bpLabel = 'ความดันสูง ระยะรุนแรง (≥180/≥110) — ควรพบแพทย์ทันที!';
+    bpColor = '#7f0000'; bpBg = '#ffebee';
+    bpAdvice = 'รีบพบแพทย์โดยด่วน อาจเกิดภาวะฉุกเฉิน';
   } else {
-    bpClass='ปกติ'; bpColor='#1b5e20'; bpBg='#e8f5e9'; bpIcon='✅';
+    // กรณีอยู่ระหว่างเกณฑ์ (เช่น 120-129/ต่ำกว่า 80 หรือ 130-139/ต่ำกว่า 85)
+    bpIcon = '🟡'; bpLabel = 'อยู่ในเกณฑ์เฝ้าระวัง';
+    bpColor = '#f57f17'; bpBg = '#fffde7';
+    bpAdvice = 'ติดตามความดันสม่ำเสมอ ปรึกษาแพทย์หากค่าสูงขึ้นเรื่อยๆ';
   }
 
-  let pulMsg = '';
+  // ---- ประเมินชีพจร ----
+  let pulIcon = '', pulLabel = '', pulColor = '';
   if (pul) {
-    if (pul < 60) pulMsg = ' | ชีพจรช้า (<60)';
-    else if (pul > 100) pulMsg = ' | ชีพจรเร็ว (>100)';
-    else pulMsg = ' | ชีพจรปกติ';
+    if (pul < 60) {
+      pulIcon = '⬇️'; pulLabel = `ชีพจรช้า (${pul} ครั้ง/นาที)`; pulColor = '#1565c0';
+    } else if (pul <= 100) {
+      pulIcon = '💚'; pulLabel = `ชีพจรปกติ (${pul} ครั้ง/นาที)`; pulColor = '#2e7d32';
+    } else {
+      pulIcon = '⚠️'; pulLabel = `ชีพจรเร็ว (${pul} ครั้ง/นาที)`; pulColor = '#e65100';
+    }
   }
 
-  msg.innerHTML = `<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:${bpBg};border:1.5px solid ${bpColor}30;">
-    <span style="font-size:18px;">${bpIcon}</span>
-    <div>
-      <span style="font-weight:700;color:${bpColor};font-size:14px;">${bpClass}</span>
-      ${sys&&dia ? `<span style="color:var(--gray-mid);font-size:12px;margin-left:6px;">${sys}/${dia} mmHg${pulMsg}</span>` : ''}
-    </div>
-  </div>`;
+  msg.innerHTML = `
+    <div style="border-radius:10px;border:1.5px solid ${bpColor}40;overflow:hidden;margin-top:6px;">
+      <!-- แถบสีสถานะ -->
+      <div style="background:${bpBg};padding:10px 14px;display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:22px;flex-shrink:0;">${bpIcon}</span>
+        <div style="flex:1;">
+          <div style="font-weight:700;color:${bpColor};font-size:14px;line-height:1.3;">${bpLabel}</div>
+          <div style="font-size:12px;color:var(--gray-mid);margin-top:2px;">
+            ${sys && dia ? `<span style="font-weight:600;">${sys}/${dia} mmHg</span>` : ''}
+            ${pul ? `&nbsp;|&nbsp;<span style="color:${pulColor};">${pulIcon} ${pulLabel}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <!-- คำแนะนำ -->
+      <div style="background:white;padding:8px 14px;border-top:1px solid ${bpColor}20;display:flex;align-items:flex-start;gap:8px;">
+        <span style="font-size:14px;flex-shrink:0;">💡</span>
+        <span style="font-size:12px;color:var(--text-sub);line-height:1.5;">${bpAdvice}</span>
+      </div>
+    </div>`;
 }
 
 function toggleDisease(label) {
@@ -1103,13 +1143,16 @@ function calcBMI() {
 }
 
 function bpStatusText(sys, dia) {
-  const s = parseInt(sys)||0; const d = parseInt(dia)||0;
-  if (!s||!d) return '';
-  if (s<90||d<60) return '⚠️ ความดันต่ำ';
-  if (s<120&&d<80) return '✅ ปกติ';
-  if (s<130&&d<80) return '⚠️ สูงขอบเขต';
-  if (s<140||d<90) return '⚠️ ความดันสูงระดับ 1';
-  return '❌ ความดันสูงระดับ 2';
+  const s = parseInt(sys) || 0;
+  const d = parseInt(dia) || 0;
+  if (!s || !d) return '';
+  if (s < 90 || d < 60)                              return '⬇️ ความดันต่ำ';
+  if (s < 120 && d < 80)                             return '🟢 เหมาะสม';
+  if (s <= 129 && d <= 84)                           return '🟡 ปกติ';
+  if (s <= 139 && d <= 89)                           return '🟠 สูงกว่าปกติ';
+  if ((s >= 140 && s <= 159) || (d >= 90 && d <= 99))  return '🔴 สูงระยะเริ่มแรก';
+  if ((s >= 160 && s <= 179) || (d >= 100 && d <= 109)) return '🔴 สูงระยะปานกลาง';
+  return '🚨 สูงระยะรุนแรง';
 }
 
 function parseBP(bp) {
