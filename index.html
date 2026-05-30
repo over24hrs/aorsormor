@@ -499,8 +499,8 @@ input[type="file"] { display:none; }
   <div id="healthNameACList" class="autocomplete-list" style="display:none;"></div>
 </div>
 <div class="form-group">
-  <label>ชื่อ <span style="color:red">*</span></label>
-  <input id="hFirstName" placeholder="ชื่อ">
+  <label>ชื่อ (รวมคำนำหน้า) <span style="color:red">*</span></label>
+  <input id="hFirstName" placeholder="เช่น นายสมชาย / นางสาวสมหญิง">
 </div>
 <div class="form-group">
   <label>นามสกุล <span style="color:red">*</span></label>
@@ -508,18 +508,12 @@ input[type="file"] { display:none; }
 </div>
       </div>
       <div class="form-row">
-  <div class="form-group" style="max-width:130px;">
-    <label>คำนำหน้า</label>
-    <select id="hPrefix" style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text-main);">
-      <option value="">-- เลือก --</option>
-      <option value="เด็กชาย">เด็กชาย</option>
-      <option value="เด็กหญิง">เด็กหญิง</option>
-      <option value="นาย">นาย</option>
-      <option value="นาง">นาง</option>
-      <option value="นางสาว">นางสาว</option>
-    </select>
+  <select id="hPrefix" style="display:none;"></select>
+  <div class="form-group"><label>เลขบัตรประชาชน <span style="font-size:11px;color:var(--gray-mid);">(13 หลัก)</span></label>
+    <input id="hIdCard" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17"
+      oninput="this.value=formatIdCardInput(this.value)"
+      style="font-family:monospace;letter-spacing:1px;font-size:13px;">
   </div>
-  <div class="form-group"><label>เลขบัตรประชาชน</label><input id="hIdCard" placeholder="13 หลัก" maxlength="13" oninput="this.value=this.value.replace(/\D/g,'')"></div>
   <div class="form-group"><label>เบอร์โทร</label><input id="hPhone" placeholder="0XX-XXX-XXXX"></div>
 </div>
       <div class="form-row">
@@ -1056,6 +1050,50 @@ function populateBirthDropdowns() {
   }
 }
 
+// ---- ID Card helpers ----
+function formatIdCard(raw) {
+  if (!raw) return '-';
+  const d = String(raw).replace(/\D/g, '');
+  if (d.length !== 13) return d || '-';
+  return `${d[0]}-${d.slice(1,5)}-${d.slice(5,10)}-${d.slice(10,12)}-${d[12]}`;
+}
+function formatIdCardInput(val) {
+  // ลบตัวที่ไม่ใช่เลขออก แล้วจัดรูป X-XXXX-XXXXX-XX-X
+  const d = val.replace(/\D/g, '').slice(0, 13);
+  let out = '';
+  for (let i = 0; i < d.length; i++) {
+    if (i === 1 || i === 5 || i === 10 || i === 12) out += '-';
+    out += d[i];
+  }
+  return out;
+}
+
+// ---- Age calculation helper (ปี/เดือน/วัน) ----
+function calcFullAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let years  = today.getFullYear() - birth.getFullYear();
+  let months = today.getMonth()    - birth.getMonth();
+  let days   = today.getDate()     - birth.getDate();
+  if (days < 0) {
+    months--;
+    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) { years--; months += 12; }
+  return { years: Math.max(0, years), months: Math.max(0, months), days: Math.max(0, days) };
+}
+
+function ageText(fa) {
+  if (!fa) return '-';
+  const parts = [];
+  if (fa.years  > 0) parts.push(`${fa.years} ปี`);
+  if (fa.months > 0) parts.push(`${fa.months} เดือน`);
+  if (fa.days   > 0 || parts.length === 0) parts.push(`${fa.days} วัน`);
+  return parts.join(' ');
+}
+
 function calcAgeFromBirth() {
   const dayEl   = document.getElementById('hBirthDay');
   const monEl   = document.getElementById('hBirthMonth');
@@ -1066,7 +1104,7 @@ function calcAgeFromBirth() {
 
   const day    = parseInt(dayEl?.value)  || 0;
   const mon    = parseInt(monEl?.value)  || 0;
-  const ceYear = parseInt(yearEl?.value) || 0; // yearEl เก็บค่า CE แล้ว
+  const ceYear = parseInt(yearEl?.value) || 0;
 
   if (!ceYear || ceYear < 1857) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
 
@@ -1078,21 +1116,25 @@ function calcAgeFromBirth() {
     return;
   }
 
-  let years = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
-  if (years < 0) years = 0;
+  const isoStr = `${ceYear}-${String(mon||1).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
+  const fa = calcFullAge(isoStr);
+  const beYear = ceYear + 543;
 
-  let months = today.getMonth() - birth.getMonth();
-  if (months < 0) months += 12;
+  const bgColor = fa.years < 1 ? '#e3f2fd' : fa.years >= 60 ? '#f3e5f5' : fa.years <= 5 ? '#e8f5e9' : 'var(--green-pale)';
+  const txColor = fa.years < 1 ? '#1565c0' : fa.years >= 60 ? '#6a1b9a' : fa.years <= 5 ? '#2e7d32' : 'var(--green-dark)';
 
-  const ageLabel = years < 1
-    ? `<span class="age-display" style="background:#e3f2fd;color:#1565c0;">อายุ ${months} เดือน</span>`
-    : `<span class="age-display">อายุ ${years} ปี</span>`;
-  ageEl.innerHTML = ageLabel;
+  ageEl.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+      <span style="background:${bgColor};color:${txColor};border-radius:8px;padding:4px 14px;font-size:13px;font-weight:600;">
+        🎂 ${ageText(fa)}
+      </span>
+      <span style="font-size:12px;color:var(--gray-mid);">
+        เกิด ${day||'-'}/${mon||'-'}/${beYear} พ.ศ.
+      </span>
+    </div>`;
 
   if (childFields) {
-    childFields.style.display = years <= 5 ? 'block' : 'none';
+    childFields.style.display = fa.years <= 5 ? 'block' : 'none';
   }
 }
 
@@ -3647,11 +3689,11 @@ function openAddHealthModal() {
   document.getElementById('hBirthYear').value  = '';
   // ... (โค้ดที่เหลือเหมือนเดิม)
   fields.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('hPrefix').value = '';
-  document.getElementById('hGender').value = '';
-  document.getElementById('hBirthDay').value   = '';
-  document.getElementById('hBirthMonth').value = '';
-  document.getElementById('hBirthYear').value  = '';
+  document.getElementById('hPrefix').value  = '';
+  document.getElementById('hGender').value  = '';
+  document.getElementById('hBirthDay').value    = '';
+  document.getElementById('hBirthMonth').value  = '';
+  document.getElementById('hBirthYear').value   = '';
   document.getElementById('hDisabilityType').value = '';
   const prevEl2      = document.getElementById('hPhotoPreview');
   const placeholder2 = document.getElementById('hPhotoPlaceholder');
@@ -3686,9 +3728,9 @@ function editHealthMember(id) {
       break;
     }
   }
-  document.getElementById('hPrefix').value = detectedPrefix;
-  document.getElementById('hFirstName').value = detectedFirstName;
-  document.getElementById('hLastName').value = h.lastName||'';
+  document.getElementById('hPrefix').value    = '';
+  document.getElementById('hFirstName').value = (detectedPrefix ? detectedPrefix : '') + detectedFirstName;
+  document.getElementById('hLastName').value  = h.lastName||'';
   // parse address กลับ: "หมู่ 9 บ้านเลขที่ 123" → moo=9, house=123
 const addrStr = h.address || '';
 let parsedMoo = '', parsedHouse = '';
@@ -3703,8 +3745,8 @@ if (houseEl2) houseEl2.value = parsedHouse;
 const addrEl2 = document.getElementById('hAddress');
 if (addrEl2) addrEl2.value = h.address || '';
 const searchEl2 = document.getElementById('hFullNameSearch');
-if (searchEl2) searchEl2.value = `${document.getElementById('hPrefix').value}${h.firstName||''} ${h.lastName||''}`.trim();
-  document.getElementById('hIdCard').value = h.idCard||'';
+if (searchEl2) searchEl2.value = `${h.firstName||''} ${h.lastName||''}`.trim();
+  document.getElementById('hIdCard').value = formatIdCardInput(h.idCard||'');
   document.getElementById('hPhone').value = h.phone||'';
   document.getElementById('hGender').value = h.gender||'';
   document.getElementById('hHeight').value = h.height||'';
@@ -3791,11 +3833,9 @@ function clearHealthPhoto() {
 
 async function saveHealthMember() {
   const editId = document.getElementById('editHealthId').value;
-  const prefix = document.getElementById('hPrefix').value;
-  const rawFirstName = document.getElementById('hFirstName').value.trim();
-  const lastName = document.getElementById('hLastName').value.trim();
-  if (!rawFirstName) { showToast('❌ กรุณาใส่ชื่อ'); return; }
-  const firstName = prefix ? prefix + rawFirstName : rawFirstName;
+  const firstName = document.getElementById('hFirstName').value.trim();
+  const lastName  = document.getElementById('hLastName').value.trim();
+  if (!firstName) { showToast('❌ กรุณาใส่ชื่อ'); return; }
 
   const bpSys = document.getElementById('hBPSys').value.trim();
   const bpDia = document.getElementById('hBPDia').value.trim();
@@ -3857,7 +3897,7 @@ if (previewEl && previewEl.style.display !== 'none' && previewEl.src) {
       if (m) return `หมู่ ${m}`;
       return h2;
     })(),
-    idCard: document.getElementById('hIdCard').value.trim(),
+    idCard: document.getElementById('hIdCard').value.replace(/\D/g,'').trim(),
     phone: document.getElementById('hPhone').value.trim(),
     gender: document.getElementById('hGender').value,
     birthDate: birthDate||null,
@@ -3913,13 +3953,15 @@ function filterHealth() {
   tbody.innerHTML = myMembers.map(h => {
     const diseases = Array.isArray(h.diseases) ? h.diseases.join(', ') : h.diseases||'-';
     const ph = h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);">`:personIconSVG(44);
-    const ageTxt = h.age!==null&&h.age!==undefined ? `${h.age} ปี` : '-';
+    const fa = h.birthDate ? calcFullAge(h.birthDate) : null;
+    const ageTxt = fa ? ageText(fa) : (h.age!==null&&h.age!==undefined ? `${h.age} ปี` : '-');
     const bmiVal = parseFloat(h.bmi)||0;
     let bc='bmi-normal',bl='ปกติ';
     if(bmiVal<18.5){bc='bmi-under';bl='ผอม';}else if(bmiVal>=25&&bmiVal<30){bc='bmi-over';bl='น้ำหนักเกิน';}else if(bmiVal>=30){bc='bmi-obese';bl='อ้วน';}
     const bp1 = h.bp1||(h.bp?h.bp:'');
     const bpHtml = bp1?`<span class="bp-badge">${bp1}</span>`:'<span style="color:var(--gray-mid)">-</span>';
-    return `<tr><td style="text-align:center;padding:8px;">${ph}</td><td style="padding:8px;">${h.firstName} ${h.lastName}</td><td style="padding:8px;">${h.address||'-'}</td><td style="padding:8px;">${h.gender||'-'}</td><td style="padding:8px;">${ageTxt}</td><td style="padding:8px;">${h.phone||'-'}</td><td style="padding:8px;max-width:160px;font-size:12px;">${diseases}</td><td style="padding:8px;">${h.height||'-'}</td><td style="padding:8px;">${h.weight||'-'}</td><td style="padding:8px;"><span class="bmi-badge ${bc}">${h.bmi||'-'}<small>${bl}</small></span></td><td style="padding:8px;">${bpHtml}</td><td style="padding:8px;">${h.bloodSugar||'-'}</td><td style="padding:8px;white-space:nowrap;"><button class="btn-edit" onclick="editHealthMember(${h.id})">แก้ไข</button> <button class="btn-danger" onclick="deleteHealthMember(${h.id})">ลบ</button></td></tr>`;
+    const hIdFmt = formatIdCard(h.idCard||'');
+    return `<tr><td style="text-align:center;padding:8px;">${ph}</td><td style="padding:8px;">${h.firstName} ${h.lastName}</td><td style="padding:8px;">${h.address||'-'}</td><td style="padding:8px;">${h.gender||'-'}</td><td style="padding:8px;white-space:nowrap;">${ageTxt}</td><td style="padding:8px;">${h.phone||'-'}</td><td style="padding:8px;max-width:160px;font-size:12px;">${diseases}</td><td style="padding:8px;">${h.height||'-'}</td><td style="padding:8px;">${h.weight||'-'}</td><td style="padding:8px;"><span class="bmi-badge ${bc}">${h.bmi||'-'}<small>${bl}</small></span></td><td style="padding:8px;">${bpHtml}</td><td style="padding:8px;">${h.bloodSugar||'-'}</td><td style="padding:8px;white-space:nowrap;"><button class="btn-edit" onclick="editHealthMember(${h.id})">แก้ไข</button> <button class="btn-danger" onclick="deleteHealthMember(${h.id})">ลบ</button></td></tr>`;
   }).join('')||'<tr><td colspan="13" class="text-center" style="color:var(--gray-mid);padding:20px;">ไม่พบข้อมูล</td></tr>';
 }
 
@@ -4604,11 +4646,11 @@ function fillHealthFromPopulation(p) {
   const fname = nameParts[0] || '';
   const lname = nameParts.slice(1).join(' ') || '';
 
-  document.getElementById('hPrefix').value    = detectedPrefix;
-  document.getElementById('hFirstName').value = fname;
+  document.getElementById('hPrefix').value    = '';
+  document.getElementById('hFirstName').value = detectedPrefix ? `${detectedPrefix}${fname}` : fname;
   document.getElementById('hLastName').value  = lname;
   document.getElementById('hGender').value    = p.gender  || '';
-  document.getElementById('hIdCard').value    = p.idCard  || '';
+  document.getElementById('hIdCard').value    = formatIdCardInput(p.idCard || '');
   document.getElementById('hPhone').value     = p.phone   || '';
   // บ้านเลขที่ + หมู่
   if (p.houseNo)  document.getElementById('hHouseNo').value = p.houseNo;
@@ -4746,7 +4788,7 @@ function buildPopulationRows(data) {
           ${ageText}
         </span>
       </td>
-      <td style="font-size:12px;color:var(--gray-mid);">${p.idCard || '-'}</td>
+      <td style="font-size:12px;color:var(--gray-mid);font-family:monospace;">${formatIdCard(p.idCard)}</td>
       <td style="font-size:13px;">${p.phone || '-'}</td>
       ${isAdmin ? `<td style="white-space:nowrap;">
         <button class="btn-edit" style="font-size:11px;padding:4px 10px;" onclick="editPopulation(${p.id})">✏️ แก้ไข</button>
