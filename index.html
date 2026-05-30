@@ -1821,7 +1821,11 @@ function mapHealthRow(h) {
   if (Array.isArray(h.diseases)) diseases = h.diseases;
   else if (h.disease) diseases = [h.disease];
 
-  const rawBirthDate = h.birthdate || h.birth_date || '';
+  const idCardClean = (h.id_card || '').replace(/\D/g, '');
+  const popMatch = idCardClean
+    ? populationData.find(p => p.idCard && p.idCard.replace(/\D/g, '') === idCardClean)
+    : null;
+  const rawBirthDate = h.birthdate || h.birth_date || popMatch?.birthDate || '';
   let age = h.age || null;
   if (!age && rawBirthDate) {
     const birth = new Date(rawBirthDate);
@@ -2448,9 +2452,22 @@ async function initApp() {
     events = eventsData;
     activityOrders = actOrdersData;
     activityPosts = postsData;
-    allHealthMembers = allHealthData;
     mosquitoSurveyGroups = mosquitoData;
     populationData = popData;
+    // เติม birthdate จาก population ให้ health members ที่ยังไม่มีข้อมูล
+    allHealthMembers = allHealthData.map(h => {
+      if (h.birthDate) return h;
+      const clean = (h.idCard || '').replace(/\D/g, '');
+      if (!clean) return h;
+      const pop = populationData.find(p => p.idCard && p.idCard.replace(/\D/g, '') === clean);
+      if (!pop?.birthDate) return h;
+      const fa = calcFullAge(pop.birthDate);
+      return {
+        ...h,
+        birthDate: pop.birthDate,
+        age: fa ? fa.years : h.age
+      };
+    });
     if (settingsData.marquee_text) document.getElementById('marqueeText').textContent = settingsData.marquee_text;
     // ถ้า Supabase members ว่างเปล่า → seed ข้อมูล 21 คนอัตโนมัติ
     if (membersData.length === 0) await autoSeedMembersIfEmpty();
