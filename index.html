@@ -2084,7 +2084,7 @@ async function dbGetPopulation() {
     houseNo: p.house_number || '',
     fullName: p.full_name || '',
     gender: p.gender || '',
-    birthDate: p.birth_date || '',
+    birthDate: p.birthdate || p.birth_date || '',
     idCard: p.id_card || '',
     phone: p.phone || '',
     createdAt: p.created_at || ''
@@ -2097,7 +2097,7 @@ async function dbAddPopulation(d) {
     house_number: d.houseNo || '',
     full_name: d.fullName || '',
     gender: d.gender || '',
-    birth_date: d.birthDate || null,
+    birthdate: d.birthDate || null,
     id_card: d.idCard || '',
     phone: d.phone || ''
   }).select().single();
@@ -2108,7 +2108,7 @@ async function dbAddPopulation(d) {
     houseNo: data.house_number || '',
     fullName: data.full_name || '',
     gender: data.gender || '',
-    birthDate: data.birth_date || '',
+    birthDate: data.birthdate || data.birth_date || '',
     idCard: data.id_card || '',
     phone: data.phone || '',
     createdAt: data.created_at || ''
@@ -2121,7 +2121,7 @@ async function dbUpdatePopulation(id, d) {
     house_number: d.houseNo || '',
     full_name: d.fullName || '',
     gender: d.gender || '',
-    birth_date: d.birthDate || null,
+    birthdate: d.birthDate || null,
     id_card: d.idCard || '',
     phone: d.phone || ''
   }).eq('id', id);
@@ -3861,7 +3861,14 @@ if (searchEl2) searchEl2.value = `${h.firstName||''} ${h.lastName||''}`.trim();
   document.getElementById('hBPSys').value = bpParts[0]||'';
   document.getElementById('hBPDia').value = bpParts[1]||'';
   document.getElementById('hBPPul').value = bpParts[2]||h.bpPul||'';
-  setBirthDateFromISO(h.birthDate||'');
+  // ดึง birthdate: ใช้ค่าที่บันทึกไว้, ถ้าไม่มีให้ cross-reference จาก population
+  let resolvedBirthDate = h.birthDate || '';
+  if (!resolvedBirthDate && h.idCard) {
+    const idClean = (h.idCard||'').replace(/\D/g,'');
+    const popRec = idClean ? populationData.find(p => p.idCard && p.idCard.replace(/\D/g,'') === idClean) : null;
+    if (popRec?.birthDate) resolvedBirthDate = popRec.birthDate;
+  }
+  setBirthDateFromISO(resolvedBirthDate);
   setSelectedDiseases(h.diseases||[]);
   const prevEl      = document.getElementById('hPhotoPreview');
   const placeholder = document.getElementById('hPhotoPlaceholder');
