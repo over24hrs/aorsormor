@@ -1874,9 +1874,10 @@ function mapHealthRow(h) {
   if (Array.isArray(h.diseases)) diseases = h.diseases;
   else if (h.disease) diseases = [h.disease];
 
+  const rawBirthDate = h.birthdate || h.birth_date || '';
   let age = h.age || null;
-  if (!age && h.birth_date) {
-    const birth = new Date(h.birth_date);
+  if (!age && rawBirthDate) {
+    const birth = new Date(rawBirthDate);
     const today = new Date();
     let y = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
@@ -1894,7 +1895,7 @@ function mapHealthRow(h) {
     edu: h.education || '',
     phone: h.phone || '',
     gender: h.gender || '',
-    birthDate: h.birth_date || '',
+    birthDate: rawBirthDate,
     age: age,
     caretaker: h.caretaker || '',
     diseases: diseases,
@@ -1940,7 +1941,7 @@ async function dbAddHealth(d) {
     id_card: d.idCard,
     phone: d.phone,
     gender: d.gender || null,
-    birth_date: d.birthDate || null,
+    birthdate: d.birthDate || null,
     age: d.age || null,
     caretaker: d.caretaker || null,
     disease: Array.isArray(d.diseases) ? d.diseases.join(', ') : (d.diseases || ''),
@@ -1974,7 +1975,7 @@ async function dbUpdateHealth(id, d) {
     id_card: d.idCard,
     phone: d.phone,
     gender: d.gender || null,
-    birth_date: d.birthDate || null,
+    birthdate: d.birthDate || null,
     age: d.age || null,
     caretaker: d.caretaker || null,
     disease: Array.isArray(d.diseases) ? d.diseases.join(', ') : (d.diseases || ''),
