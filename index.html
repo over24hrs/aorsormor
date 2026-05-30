@@ -486,8 +486,10 @@ input[type="file"] { display:none; }
   </select>
 </div>
 <div class="form-group">
-  <label>บ้านเลขที่</label>
-  <input id="hHouseNo" placeholder="เช่น 123/4" oninput="filterPopulationByHouse()">
+  <label>บ้านเลขที่ <span style="font-size:11px;color:var(--gray-mid);">(เลือกหรือพิมพ์)</span></label>
+  <input id="hHouseNo" placeholder="เช่น 123/4" list="hHouseNoList"
+    oninput="filterPopulationByHouse()" onchange="filterPopulationByHouse()">
+  <datalist id="hHouseNoList"></datalist>
 </div>
 <div class="form-group autocomplete-wrap" style="grid-column:1/-1;">
   <label>ชื่อ-นามสกุล <span style="color:red">*</span> <span style="font-size:11px;color:var(--gray-mid);">(พิมพ์หรือเลือกจากรายชื่อ)</span></label>
@@ -896,26 +898,10 @@ input[type="file"] { display:none; }
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group" style="max-width:130px;">
-        <label>คำนำหน้า</label>
-        <select id="popPrefix" style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;">
-          <option value="">-- เลือก --</option>
-          <option value="เด็กชาย">เด็กชาย</option>
-          <option value="เด็กหญิง">เด็กหญิง</option>
-          <option value="นาย">นาย</option>
-          <option value="นาง">นาง</option>
-          <option value="นางสาว">นางสาว</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>ชื่อ <span style="color:red">*</span></label>
-        <input id="popFirstName" placeholder="ชื่อ">
-      </div>
-      <div class="form-group">
-        <label>นามสกุล <span style="color:red">*</span></label>
-        <input id="popLastName" placeholder="นามสกุล">
-      </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>ชื่อ-นามสกุล (พร้อมคำนำหน้า) <span style="color:red">*</span></label>
+      <input id="popFullName" placeholder="เช่น นายสมชาย ใจดี หรือ นางสาวสมหญิง มีสุข"
+        style="width:100%;padding:9px 12px;border:1.5px solid #dde8e1;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;">
     </div>
 
     <div class="form-row">
@@ -1970,15 +1956,13 @@ function formatAgeBadge(birthDate) {
 // POPULATION DB
 // ============================================================
 async function dbGetPopulation() {
-  const { data, error } = await db.from('population').select('*').order('moo').order('house_no');
+  const { data, error } = await db.from('population').select('*').order('village').order('house_number');
   if (error) { console.warn('population load error:', error.message); return []; }
   return (data || []).map(p => ({
     id: p.id,
-    moo: p.moo || '9',
-    houseNo: p.house_no || '',
-    prefix: p.prefix || '',
-    firstName: p.first_name || '',
-    lastName: p.last_name || '',
+    village: String(p.village || '9'),
+    houseNo: p.house_number || '',
+    fullName: p.full_name || '',
     gender: p.gender || '',
     birthDate: p.birth_date || '',
     idCard: p.id_card || '',
@@ -1989,11 +1973,9 @@ async function dbGetPopulation() {
 
 async function dbAddPopulation(d) {
   const { data, error } = await db.from('population').insert({
-    moo: d.moo,
-    house_no: d.houseNo || '',
-    prefix: d.prefix || '',
-    first_name: d.firstName,
-    last_name: d.lastName,
+    village: parseInt(d.village) || 9,
+    house_number: d.houseNo || '',
+    full_name: d.fullName || '',
     gender: d.gender || '',
     birth_date: d.birthDate || null,
     id_card: d.idCard || '',
@@ -2002,11 +1984,9 @@ async function dbAddPopulation(d) {
   if (error) { dbErr('เพิ่มประชากร', error); return null; }
   return {
     id: data.id,
-    moo: data.moo || '',
-    houseNo: data.house_no || '',
-    prefix: data.prefix || '',
-    firstName: data.first_name || '',
-    lastName: data.last_name || '',
+    village: String(data.village || '9'),
+    houseNo: data.house_number || '',
+    fullName: data.full_name || '',
     gender: data.gender || '',
     birthDate: data.birth_date || '',
     idCard: data.id_card || '',
@@ -2017,11 +1997,9 @@ async function dbAddPopulation(d) {
 
 async function dbUpdatePopulation(id, d) {
   const { error } = await db.from('population').update({
-    moo: d.moo,
-    house_no: d.houseNo || '',
-    prefix: d.prefix || '',
-    first_name: d.firstName,
-    last_name: d.lastName,
+    village: parseInt(d.village) || 9,
+    house_number: d.houseNo || '',
+    full_name: d.fullName || '',
     gender: d.gender || '',
     birth_date: d.birthDate || null,
     id_card: d.idCard || '',
@@ -4521,20 +4499,50 @@ let popFilteredByMoo = [];
 async function loadPopulationByMoo() {
   const moo = document.getElementById('hMoo')?.value || '';
   const houseInput = document.getElementById('hHouseNo');
-  if (houseInput) houseInput.value = '';
+  if (houseInput) { houseInput.value = ''; }
   updateHealthAddress();
-  popFilteredByMoo = moo ? populationData.filter(p => String(p.moo) === moo) : [];
-  // clear name fields
-  const fields = ['hFirstName','hLastName','hPhone','hBPSys','hBPDia','hBPPul','hBloodSugar'];
+  popFilteredByMoo = moo ? populationData.filter(p => String(p.village) === moo) : [];
   // เคลียร์ autocomplete
   const acList = document.getElementById('healthNameACList');
   const searchInput = document.getElementById('hFullNameSearch');
   if (acList) { acList.innerHTML = ''; acList.style.display = 'none'; }
   if (searchInput) searchInput.value = '';
+  // อัปเดต datalist บ้านเลขที่
+  const dl = document.getElementById('hHouseNoList');
+  if (dl) {
+    dl.innerHTML = '';
+    const houses = [...new Set(popFilteredByMoo.map(p => p.houseNo).filter(Boolean))].sort((a,b) => parseFloat(a)-parseFloat(b));
+    houses.forEach(h => { const opt = document.createElement('option'); opt.value = h; dl.appendChild(opt); });
+  }
 }
 
 function filterPopulationByHouse() {
   updateHealthAddress();
+  const house = (document.getElementById('hHouseNo')?.value || '').trim();
+  const moo   = document.getElementById('hMoo')?.value || '';
+  const acList = document.getElementById('healthNameACList');
+  if (!acList) return;
+  if (!house) { acList.innerHTML = ''; acList.style.display = 'none'; return; }
+  const pool = moo ? populationData.filter(p => String(p.village) === moo) : populationData;
+  const inHouse = pool.filter(p => p.houseNo === house);
+  if (!inHouse.length) { acList.innerHTML = ''; acList.style.display = 'none'; return; }
+  acList.innerHTML = '';
+  inHouse.forEach(p => {
+    const age = calcAgeFromDate(p.birthDate);
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = `<strong>${p.fullName || '-'}</strong>`
+      + (p.gender ? `<span style="background:${p.gender==='ชาย'?'#e3f2fd':'#fce4ec'};color:${p.gender==='ชาย'?'#1565c0':'#880e4f'};border-radius:6px;padding:1px 8px;font-size:11px;margin-left:8px;">${p.gender}</span>` : '')
+      + (age !== null ? `<span style="background:var(--green-pale);color:var(--green-dark);border-radius:6px;padding:1px 8px;font-size:11px;margin-left:6px;">${age} ปี</span>` : '');
+    item.onclick = () => {
+      fillHealthFromPopulation(p);
+      acList.innerHTML = '';
+      acList.style.display = 'none';
+      document.getElementById('hFullNameSearch').value = p.fullName || '';
+    };
+    acList.appendChild(item);
+  });
+  acList.style.display = 'block';
 }
 
 function updateHealthAddress() {
@@ -4553,27 +4561,26 @@ function filterHealthNameAC(query) {
   if (!acList) return;
   acList.innerHTML = '';
   const moo = document.getElementById('hMoo')?.value || '';
-  const pool = moo ? populationData.filter(p => String(p.moo) === moo) : populationData;
+  const pool = moo ? populationData.filter(p => String(p.village) === moo) : populationData;
   const q = (query || '').toLowerCase().trim();
   if (!q) { acList.style.display = 'none'; return; }
   const filtered = pool.filter(p =>
-    `${p.prefix}${p.firstName}${p.lastName}`.toLowerCase().includes(q) ||
-    p.firstName.toLowerCase().includes(q) ||
-    p.lastName.toLowerCase().includes(q)
+    (p.fullName || '').toLowerCase().includes(q)
   ).slice(0, 10);
   if (!filtered.length) { acList.style.display = 'none'; return; }
   filtered.forEach(p => {
     const age = calcAgeFromDate(p.birthDate);
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
-    item.innerHTML = `<strong>${p.prefix}${p.firstName} ${p.lastName}</strong>`
+    item.innerHTML = `<strong>${p.fullName || '-'}</strong>`
       + `<span style="color:var(--gray-mid);margin-left:8px;font-size:11px;">บ้านเลขที่ ${p.houseNo||'-'}</span>`
-      + (age !== null ? `<span style="background:var(--green-pale);color:var(--green-dark);border-radius:6px;padding:1px 8px;font-size:11px;margin-left:6px;">${age} ปี</span>` : '')
-      + (p.birthDate ? `<div style="font-size:11px;color:var(--gray-mid);">เกิด: ${formatThaiDate(p.birthDate)}</div>` : '');
+      + (p.gender ? `<span style="background:${p.gender==='ชาย'?'#e3f2fd':'#fce4ec'};color:${p.gender==='ชาย'?'#1565c0':'#880e4f'};border-radius:6px;padding:1px 8px;font-size:11px;margin-left:6px;">${p.gender}</span>` : '')
+      + (age !== null ? `<span style="background:var(--green-pale);color:var(--green-dark);border-radius:6px;padding:1px 8px;font-size:11px;margin-left:6px;">${age} ปี</span>` : '');
     item.onclick = () => {
       fillHealthFromPopulation(p);
+      acList.innerHTML = '';
       acList.style.display = 'none';
-      document.getElementById('hFullNameSearch').value = `${p.prefix}${p.firstName} ${p.lastName}`;
+      document.getElementById('hFullNameSearch').value = p.fullName || '';
     };
     acList.appendChild(item);
   });
@@ -4581,35 +4588,41 @@ function filterHealthNameAC(query) {
 }
 
 function fillHealthFromPopulation(p) {
-  // แยกคำนำหน้า
+  // แยกคำนำหน้าออกจาก fullName
   const prefixes = ['เด็กชาย','เด็กหญิง','นางสาว','นาง','นาย'];
-  let detectedPrefix = p.prefix || '';
-  let fname = p.firstName || '';
-  if (!detectedPrefix) {
-    for (const px of prefixes) {
-      if (fname.startsWith(px)) { detectedPrefix = px; fname = fname.slice(px.length).trim(); break; }
+  let detectedPrefix = '';
+  let fullNameNoPrefix = p.fullName || '';
+  for (const px of prefixes) {
+    if (fullNameNoPrefix.startsWith(px)) {
+      detectedPrefix = px;
+      fullNameNoPrefix = fullNameNoPrefix.slice(px.length).trim();
+      break;
     }
   }
-  document.getElementById('hPrefix').value = detectedPrefix;
+  // แยกชื่อ-นามสกุล
+  const nameParts = fullNameNoPrefix.split(/\s+/);
+  const fname = nameParts[0] || '';
+  const lname = nameParts.slice(1).join(' ') || '';
+
+  document.getElementById('hPrefix').value    = detectedPrefix;
   document.getElementById('hFirstName').value = fname;
-  document.getElementById('hLastName').value = p.lastName || '';
-  document.getElementById('hGender').value = p.gender || '';
-  document.getElementById('hIdCard').value = p.idCard || '';
-  // เบอร์โทร: ถ้ามีใน population ใส่ให้ ถ้าไม่มีให้กรอกเอง
-  document.getElementById('hPhone').value = p.phone || '';
+  document.getElementById('hLastName').value  = lname;
+  document.getElementById('hGender').value    = p.gender  || '';
+  document.getElementById('hIdCard').value    = p.idCard  || '';
+  document.getElementById('hPhone').value     = p.phone   || '';
   // บ้านเลขที่ + หมู่
-  if (p.houseNo) document.getElementById('hHouseNo').value = p.houseNo;
-  if (p.moo) document.getElementById('hMoo').value = p.moo;
+  if (p.houseNo)  document.getElementById('hHouseNo').value = p.houseNo;
+  if (p.village)  document.getElementById('hMoo').value     = p.village;
   updateHealthAddress();
   // วันเกิด
   if (p.birthDate) setBirthDateFromISO(p.birthDate);
   else {
-    document.getElementById('hBirthDay').value = '';
+    document.getElementById('hBirthDay').value   = '';
     document.getElementById('hBirthMonth').value = '';
-    document.getElementById('hBirthYear').value = '';
+    document.getElementById('hBirthYear').value  = '';
     document.getElementById('hAgeDisplay').innerHTML = '';
   }
-  showToast(`✅ ดึงข้อมูล ${p.prefix}${p.firstName} ${p.lastName} สำเร็จ`);
+  showToast(`✅ ดึงข้อมูล ${p.fullName || '-'} สำเร็จ`);
 }
 
 // ปิด autocomplete เมื่อคลิกที่อื่น
@@ -4632,7 +4645,7 @@ function renderPopulation() {
   const female = populationData.filter(p => p.gender === 'หญิง').length;
 
   const mooSummary = mooList.map(m => {
-    const cnt = populationData.filter(p => String(p.moo) === m).length;
+    const cnt = populationData.filter(p => String(p.village) === m).length;
     return `<div class="fin-card" style="border-top:4px solid var(--green-mid);">
       <div class="label">${mooNames[m]}</div>
       <div class="amount income" style="font-size:20px;">${cnt}
@@ -4709,7 +4722,6 @@ function buildPopulationRows(data) {
     </td></tr>`;
   }
   return data.map((p, i) => {
-    const fullName  = `${p.prefix || ''}${p.firstName} ${p.lastName}`.trim();
     const age       = calcAgeFromDate(p.birthDate);
     const ageText   = age !== null ? `${age} ปี` : '-';
     const birthText = p.birthDate ? formatThaiDate(p.birthDate) : '-';
@@ -4718,11 +4730,11 @@ function buildPopulationRows(data) {
       <td style="text-align:center;color:var(--gray-mid);font-size:12px;">${i + 1}</td>
       <td>
         <span style="background:var(--green-pale);color:var(--green-dark);border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600;">
-          หมู่ ${p.moo}
+          หมู่ ${p.village}
         </span>
       </td>
       <td style="text-align:center;">${p.houseNo || '-'}</td>
-      <td style="font-weight:600;">${fullName}</td>
+      <td style="font-weight:600;">${p.fullName || '-'}</td>
       <td style="text-align:center;">
         <span style="background:${p.gender==='ชาย'?'#e3f2fd':'#fce4ec'};color:${p.gender==='ชาย'?'#1565c0':'#880e4f'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;">
           ${p.gender || '-'}
@@ -4749,10 +4761,10 @@ function filterPopulationTable() {
   const moo    = document.getElementById('popFilterMoo')?.value || '';
   const gender = document.getElementById('popFilterGender')?.value || '';
   const filtered = populationData.filter(p => {
-    const full = `${p.prefix||''}${p.firstName} ${p.lastName}`.toLowerCase();
-    if (name   && !full.includes(name))          return false;
-    if (moo    && String(p.moo) !== moo)          return false;
-    if (gender && p.gender !== gender)            return false;
+    const full = (p.fullName || '').toLowerCase();
+    if (name   && !full.includes(name))            return false;
+    if (moo    && String(p.village) !== moo)       return false;
+    if (gender && p.gender !== gender)             return false;
     return true;
   });
   const tbody = document.getElementById('popTableBody');
@@ -4764,9 +4776,7 @@ function openAddPopulationModal() {
   document.getElementById('popModalTitle').textContent = '➕ เพิ่มข้อมูลประชากร';
   document.getElementById('popMoo').value          = '9';
   document.getElementById('popHouseNo').value      = '';
-  document.getElementById('popPrefix').value       = '';
-  document.getElementById('popFirstName').value    = '';
-  document.getElementById('popLastName').value     = '';
+  document.getElementById('popFullName').value     = '';
   document.getElementById('popGender').value       = '';
   document.getElementById('popIdCard').value       = '';
   document.getElementById('popPhone').value        = '';
@@ -4847,11 +4857,9 @@ function editPopulation(id) {
   populatePopBirthDropdowns();
   document.getElementById('editPopId').value           = id;
   document.getElementById('popModalTitle').textContent = '✏️ แก้ไขข้อมูลประชากร';
-  document.getElementById('popMoo').value              = p.moo      || '9';
+  document.getElementById('popMoo').value              = p.village  || '9';
   document.getElementById('popHouseNo').value          = p.houseNo  || '';
-  document.getElementById('popPrefix').value           = p.prefix   || '';
-  document.getElementById('popFirstName').value        = p.firstName || '';
-  document.getElementById('popLastName').value         = p.lastName  || '';
+  document.getElementById('popFullName').value         = p.fullName || '';
   document.getElementById('popGender').value           = p.gender   || '';
   document.getElementById('popIdCard').value           = p.idCard   || '';
   document.getElementById('popPhone').value            = p.phone    || '';
@@ -4860,18 +4868,15 @@ function editPopulation(id) {
 }
 
 async function savePopulation() {
-  const firstName = document.getElementById('popFirstName').value.trim();
-  const lastName  = document.getElementById('popLastName').value.trim();
-  const moo       = document.getElementById('popMoo').value;
-  if (!firstName || !lastName) { showToast('❌ กรุณาใส่ชื่อและนามสกุล'); return; }
-  if (!moo)                    { showToast('❌ กรุณาเลือกหมู่');         return; }
+  const fullName = document.getElementById('popFullName').value.trim();
+  const village  = document.getElementById('popMoo').value;
+  if (!fullName) { showToast('❌ กรุณาใส่ชื่อ-นามสกุล'); return; }
+  if (!village)  { showToast('❌ กรุณาเลือกหมู่');       return; }
 
   const payload = {
-    moo,
+    village,
     houseNo   : document.getElementById('popHouseNo').value.trim(),
-    prefix    : document.getElementById('popPrefix').value,
-    firstName,
-    lastName,
+    fullName,
     gender    : document.getElementById('popGender').value,
     birthDate : getPopBirthISO(),
     idCard    : document.getElementById('popIdCard').value.trim(),
@@ -4903,7 +4908,7 @@ async function savePopulation() {
 
 async function deletePopulation(id) {
   const p    = populationData.find(x => x.id === id);
-  const name = p ? `${p.prefix || ''}${p.firstName} ${p.lastName}` : 'รายการนี้';
+  const name = p ? p.fullName : 'รายการนี้';
   if (!confirm(`ยืนยันลบ "${name}" ออกจากระบบ?\n(ข้อมูลจะถูกลบจาก Supabase ถาวร)`)) return;
   const ok = await dbDeletePopulation(id);
   if (ok) {
@@ -4920,14 +4925,12 @@ function exportPopulationExcel() {
   const rows = [
     [`ทะเบียนประชากร อสม. บ้านใหม่เจริญไพร`, '', '', '', '', '', `วันที่ Export: ${exportDate}`],
     [],
-    ['ลำดับ','หมู่','บ้านเลขที่','คำนำหน้า','ชื่อ','นามสกุล','เพศ','วันเกิด','อายุ(ปี)','เลขบัตรปชช.','เบอร์โทร'],
+    ['ลำดับ','หมู่','บ้านเลขที่','ชื่อ-นามสกุล','เพศ','วันเกิด','อายุ(ปี)','เลขบัตรปชช.','เบอร์โทร'],
     ...populationData.map((p, i) => [
       i + 1,
-      `หมู่ ${p.moo}`,
+      `หมู่ ${p.village}`,
       p.houseNo   || '',
-      p.prefix    || '',
-      p.firstName,
-      p.lastName,
+      p.fullName  || '',
       p.gender    || '',
       p.birthDate ? formatThaiDate(p.birthDate) : '',
       calcAgeFromDate(p.birthDate) ?? '',
@@ -4937,7 +4940,7 @@ function exportPopulationExcel() {
   ];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:6},{wch:8},{wch:12},{wch:10},{wch:14},{wch:14},{wch:6},{wch:14},{wch:8},{wch:16},{wch:13}];
+  ws['!cols'] = [{wch:6},{wch:8},{wch:12},{wch:24},{wch:6},{wch:14},{wch:8},{wch:16},{wch:13}];
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนประชากร');
   XLSX.writeFile(wb, `ประชากร_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}.xlsx`);
   showToast('✅ Export Excel สำเร็จ');
