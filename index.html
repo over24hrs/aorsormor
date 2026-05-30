@@ -1406,6 +1406,124 @@ async function resizeImageForStorage(file, targetMaxMB) {
 // อัปโหลดไฟล์ไปที่ Supabase Storage และคืน public URL
 // ถ้า Storage ไม่พร้อม จะ fallback เป็น base64
 // ============================================================
+// ============================================================
+// CLOUDINARY MIGRATION — อัปโหลดรูป base64 ทั้งหมดขึ้น Cloudinary
+// ============================================================
+function prepareMigrate() {
+  const stat = document.getElementById('migrateStatus');
+  const log  = document.getElementById('migrateLog');
+  const bar  = document.getElementById('migrateProgressWrap');
+  const btn  = document.getElementById('migrateScanBtn');
+  if (stat) stat.innerHTML = '<p style="color:var(--gray-mid);">กดปุ่มด้านล่างเพื่อสแกนและอัปโหลดรูปที่ยังเก็บเป็น base64 ขึ้น Cloudinary</p><p style="font-size:12px;color:var(--gray-mid);">⚠️ รูปที่เป็น Cloudinary URL อยู่แล้วจะถูกข้ามไป</p>';
+  if (log)  { log.innerHTML = ''; log.style.display = 'none'; }
+  if (bar)  bar.style.display = 'none';
+  if (btn)  btn.disabled = false;
+}
+
+function migrateLog(msg, color) {
+  const el = document.getElementById('migrateLog');
+  if (!el) return;
+  el.style.display = 'block';
+  const line = document.createElement('div');
+  line.style.color = color || '#333';
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function base64ToFile(dataUrl, filename) {
+  const res  = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], filename || 'photo.jpg', { type: blob.type || 'image/jpeg' });
+}
+
+async function migrateAllPhotosToCloudinary() {
+  const btn     = document.getElementById('migrateScanBtn');
+  const statEl  = document.getElementById('migrateStatus');
+  const barWrap = document.getElementById('migrateProgressWrap');
+  const barEl   = document.getElementById('migrateProgressBar');
+  const barTxt  = document.getElementById('migrateProgressText');
+  if (btn) btn.disabled = true;
+
+  // รวบรวมรายการที่ต้องอัปโหลด: {type, id, name, base64}
+  const jobs = [];
+
+  // --- สมาชิก อสม. (members) ---
+  members.forEach(m => {
+    if (m.photo && m.photo.startsWith('data:image/')) {
+      jobs.push({ type: 'member', id: m.id, name: m.name || `member-${m.id}`, base64: m.photo });
+    }
+  });
+
+  // --- สมาชิกที่ดูแล (health_members) ---
+  allHealthMembers.forEach(h => {
+    if (h.photo && h.photo.startsWith('data:image/')) {
+      jobs.push({ type: 'health', id: h.id, name: `${h.firstName||''} ${h.lastName||''}`.trim() || `health-${h.id}`, base64: h.photo });
+    }
+  });
+
+  if (!jobs.length) {
+    if (statEl) statEl.innerHTML = '<span style="color:var(--green-dark);font-size:14px;">✅ ไม่พบรูปภาพ base64 — รูปทุกรูปเป็น Cloudinary URL อยู่แล้ว!</span>';
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  if (statEl) statEl.innerHTML = `<span style="font-weight:600;">พบรูปที่ต้องอัปโหลด: <span style="color:var(--green-dark);">${jobs.length} รูป</span></span>`;
+  if (barWrap) barWrap.style.display = 'block';
+
+  let done = 0, ok = 0, fail = 0;
+  const total = jobs.length;
+
+  for (const job of jobs) {
+    const label = `[${job.type === 'health' ? '👤' : '🌿'} ${job.name}]`;
+    try {
+      migrateLog(`⏳ กำลังอัปโหลด ${label}...`, '#555');
+      const file   = await base64ToFile(job.base64, `${job.type}-${job.id}.jpg`);
+      const result = await uploadToCloudinary(file);
+      if (!result?.url) throw new Error('ไม่ได้รับ URL จาก Cloudinary');
+
+      const newUrl = result.url;
+
+      // อัปเดต Supabase
+      if (job.type === 'health') {
+        const { error } = await db.from('health_members').update({ photo_url: newUrl }).eq('id', job.id);
+        if (error) throw new Error(error.message);
+        // อัปเดต memory ด้วย
+        [healthMembers, allHealthMembers].forEach(arr => {
+          const idx = arr.findIndex(x => String(x.id) === String(job.id));
+          if (idx >= 0) arr[idx].photo = newUrl;
+        });
+      } else {
+        const { error } = await db.from('members').update({ photo_url: newUrl, image_url: newUrl }).eq('id', job.id);
+        if (error) throw new Error(error.message);
+        // อัปเดต memory ด้วย
+        const idx = members.findIndex(x => String(x.id) === String(job.id));
+        if (idx >= 0) members[idx].photo = newUrl;
+      }
+
+      ok++;
+      migrateLog(`  ✅ สำเร็จ ${label} → ${newUrl.slice(0, 60)}...`, '#2e7d32');
+    } catch (e) {
+      fail++;
+      migrateLog(`  ❌ ล้มเหลว ${label}: ${e.message}`, '#c62828');
+    }
+
+    done++;
+    if (barEl)  barEl.style.width  = `${(done / total) * 100}%`;
+    if (barTxt) barTxt.textContent = `${done} / ${total}`;
+    await new Promise(r => setTimeout(r, 200)); // ชะลอเล็กน้อยเพื่อไม่ spam API
+  }
+
+  // สรุปผล
+  const summary = `<div style="margin-top:8px;padding:10px 14px;background:${fail===0?'#e8f5e9':'#fff8e1'};border-radius:8px;font-size:13px;">
+    <strong>${fail===0?'🎉 เสร็จสมบูรณ์!':'⚠️ เสร็จแล้วบางส่วน'}</strong><br>
+    ✅ อัปโหลดสำเร็จ: <strong>${ok} รูป</strong>${fail>0?`<br>❌ ล้มเหลว: <strong>${fail} รูป</strong>`:''}
+  </div>`;
+  if (statEl) statEl.innerHTML = summary;
+  if (btn) btn.disabled = false;
+  if (ok > 0) render(); // refresh display
+}
+
 // CLOUDINARY UPLOAD (แทนที่ Supabase Storage)
 // ============================================================
 async function uploadMediaToStorage(file) {
@@ -2548,6 +2666,7 @@ function renderHome() {
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openModal('marqueeEditModal');prepareMarquee()">📢 แก้ไขประกาศ</button>
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openEditVillageModal()">🏘️ แก้ไขข้อมูลหมู่บ้าน</button>
     <button class="btn-primary" style="font-size:12px;padding:6px 14px;background:#2e7d32;" onclick="openAddMemberModal()">➕ เพิ่มสมาชิก</button>
+    <button style="font-size:12px;padding:6px 14px;background:#1565c0;border:none;border-radius:8px;color:white;cursor:pointer;font-family:Sarabun,sans-serif;font-weight:600;" onclick="openModal('cloudinaryMigrateModal');prepareMigrate()">☁️ อัปโหลดรูปทั้งหมด→Cloudinary</button>
     <button class="btn-danger" style="font-size:12px;padding:6px 14px;" onclick="toggleAdmin()">ออกจากโหมดแอดมิน</button>
   </div>` : `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     ${dbBadge}
@@ -5023,5 +5142,32 @@ function renderContact() {
 // ============================================================
 window.addEventListener('DOMContentLoaded', initApp);
 </script>
+<!-- CLOUDINARY MIGRATION MODAL -->
+<div class="modal-overlay" id="cloudinaryMigrateModal">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="closeModal('cloudinaryMigrateModal')">×</button>
+    <h2>☁️ อัปโหลดรูปทั้งหมดไป Cloudinary</h2>
+    <div class="section-box" style="margin-bottom:0;">
+      <div id="migrateStatus" style="font-size:14px;line-height:1.8;min-height:60px;">
+        <p style="color:var(--gray-mid);">กดปุ่มด้านล่างเพื่อสแกนและอัปโหลดรูปภาพที่ยังเก็บเป็น base64 ขึ้น Cloudinary</p>
+        <p style="font-size:12px;color:var(--gray-mid);">⚠️ รูปที่เป็น URL (Cloudinary) อยู่แล้วจะถูกข้ามไป</p>
+      </div>
+      <div id="migrateProgressWrap" style="display:none;margin-top:12px;">
+        <div style="background:#eee;border-radius:99px;height:10px;overflow:hidden;">
+          <div id="migrateProgressBar" style="height:100%;background:var(--green-mid);border-radius:99px;transition:width .3s;width:0%;"></div>
+        </div>
+        <div id="migrateProgressText" style="text-align:center;font-size:12px;color:var(--gray-mid);margin-top:4px;">0 / 0</div>
+      </div>
+      <div id="migrateLog" style="max-height:220px;overflow-y:auto;margin-top:12px;font-size:12px;font-family:monospace;background:#f5f7f6;border-radius:8px;padding:10px;display:none;"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button id="migrateScanBtn" class="btn-primary w-full" onclick="migrateAllPhotosToCloudinary()" style="font-size:14px;padding:11px;">
+        ☁️ เริ่มอัปโหลดรูปไป Cloudinary
+      </button>
+      <button class="btn-secondary" onclick="closeModal('cloudinaryMigrateModal')" style="font-size:13px;padding:11px 18px;">ปิด</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
