@@ -531,24 +531,9 @@ input[type="file"] { display:none; }
   </div>
 </div>
       <div class="form-group">
-        <label>วันเดือนปีเกิด (พ.ศ.)</label>
-        <div style="display:grid;grid-template-columns:1fr 2fr 1.5fr;gap:8px;align-items:center;">
-          <select id="hBirthDay" onchange="calcAgeFromBirth()" style="padding:8px 6px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;text-align:center;">
-            <option value="">-- วัน --</option>
-          </select>
-          <select id="hBirthMonth" onchange="calcAgeFromBirth()" style="padding:8px 6px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;">
-            <option value="">-- เดือน --</option>
-            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
-            <option value="3">มีนาคม</option><option value="4">เมษายน</option>
-            <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
-            <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
-            <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
-            <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
-          </select>
-          <select id="hBirthYear" onchange="calcAgeFromBirth()" style="padding:8px 6px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;text-align:center;">
-            <option value="">-- ปี พ.ศ. --</option>
-          </select>
-        </div>
+        <label>วันเดือนปีเกิด</label>
+        <input type="date" id="hBirthDate" onchange="calcAgeFromBirth()"
+          style="width:100%;padding:8px 10px;border:1.5px solid #dde8e1;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;box-sizing:border-box;">
         <div id="hAgeDisplay" style="margin-top:6px;"></div>
       </div>
     </div>
@@ -1035,27 +1020,7 @@ function personIconSVG(size) {
 }
 
 function populateBirthDropdowns() {
-  // เติม dropdown วัน 1-31
-  const dayEl = document.getElementById('hBirthDay');
-  if (dayEl && dayEl.options.length <= 1) {
-    for (let d = 1; d <= 31; d++) {
-      const opt = document.createElement('option');
-      opt.value = d;
-      opt.textContent = d + ' วัน';
-      dayEl.appendChild(opt);
-    }
-  }
-  // เติม dropdown ปี พ.ศ. ย้อนหลัง 120 ปี
-  const yearEl = document.getElementById('hBirthYear');
-  if (yearEl && yearEl.options.length <= 1) {
-    const currentBE = new Date().getFullYear() + 543;
-    for (let y = currentBE; y >= currentBE - 120; y--) {
-      const opt = document.createElement('option');
-      opt.value = y - 543; // เก็บเป็น CE
-      opt.textContent = y + ' พ.ศ.';
-      yearEl.appendChild(opt);
-    }
-  }
+  // ฟังก์ชันนี้คงไว้เพื่อ backward-compat — ช่องวันเกิดสมาชิกที่ดูแลเปลี่ยนเป็น input type="date" แล้ว
 }
 
 // ---- ID Card helpers ----
@@ -1103,20 +1068,15 @@ function ageText(fa) {
 }
 
 function calcAgeFromBirth() {
-  const dayEl   = document.getElementById('hBirthDay');
-  const monEl   = document.getElementById('hBirthMonth');
-  const yearEl  = document.getElementById('hBirthYear');
+  const dateEl  = document.getElementById('hBirthDate');
   const ageEl   = document.getElementById('hAgeDisplay');
   const childFields = document.getElementById('childHealthFields');
   if (!ageEl) return;
 
-  const day    = parseInt(dayEl?.value)  || 0;
-  const mon    = parseInt(monEl?.value)  || 0;
-  const ceYear = parseInt(yearEl?.value) || 0;
+  const val = dateEl?.value || '';
+  if (!val) { ageEl.innerHTML = ''; if(childFields) childFields.style.display='none'; return; }
 
-  if (!ceYear || ceYear < 1857) { ageEl.innerHTML = ''; if(childFields)childFields.style.display='none'; return; }
-
-  const birth = new Date(ceYear, mon > 0 ? mon - 1 : 0, day > 0 ? day : 1);
+  const birth = new Date(val);
   const today = new Date();
 
   if (birth > today) {
@@ -1124,21 +1084,22 @@ function calcAgeFromBirth() {
     return;
   }
 
-  const isoStr = `${ceYear}-${String(mon||1).padStart(2,'0')}-${String(day||1).padStart(2,'0')}`;
-  const fa = calcFullAge(isoStr);
-  const beYear = ceYear + 543;
+  const fa = calcFullAge(val);
+  const monthsFull = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const beYear = birth.getFullYear() + 543;
+  const thaiDate = `${birth.getDate()} ${monthsFull[birth.getMonth()]} ${beYear}`;
 
   const bgColor = fa.years < 1 ? '#e3f2fd' : fa.years >= 60 ? '#f3e5f5' : fa.years <= 5 ? '#e8f5e9' : 'var(--green-pale)';
   const txColor = fa.years < 1 ? '#1565c0' : fa.years >= 60 ? '#6a1b9a' : fa.years <= 5 ? '#2e7d32' : 'var(--green-dark)';
 
   ageEl.innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;">
-      <span style="background:${bgColor};color:${txColor};border-radius:8px;padding:4px 14px;font-size:13px;font-weight:600;">
-        🎂 ${ageText(fa)}
-      </span>
-      <span style="font-size:12px;color:var(--gray-mid);">
-        เกิด ${day||'-'}/${mon||'-'}/${beYear} พ.ศ.
-      </span>
+    <div style="padding:8px 12px;background:${bgColor};border-radius:8px;margin-top:4px;">
+      <div style="font-size:13px;color:${txColor};font-weight:600;">🎂 เกิดวันที่ ${thaiDate}</div>
+      <div style="display:flex;gap:14px;margin-top:4px;flex-wrap:wrap;">
+        <span style="font-size:13px;color:${txColor};">อายุปี <strong>${fa.years}</strong></span>
+        <span style="font-size:13px;color:${txColor};">อายุเดือน <strong>${fa.months}</strong></span>
+        <span style="font-size:13px;color:${txColor};">อายุวัน <strong>${fa.days}</strong></span>
+      </div>
     </div>`;
 
   if (childFields) {
@@ -1147,29 +1108,15 @@ function calcAgeFromBirth() {
 }
 
 function getBirthDateISO() {
-  const day    = parseInt(document.getElementById('hBirthDay')?.value)  || 0;
-  const mon    = parseInt(document.getElementById('hBirthMonth')?.value) || 0;
-  const ceYear = parseInt(document.getElementById('hBirthYear')?.value)  || 0; // เก็บค่า CE แล้ว
-  if (!ceYear || ceYear < 1857) return null;
-  const mm = String(mon || 1).padStart(2, '0');
-  const dd = String(day || 1).padStart(2, '0');
-  return `${ceYear}-${mm}-${dd}`;
+  const val = document.getElementById('hBirthDate')?.value || '';
+  if (!val) return null;
+  return val;
 }
 
 function setBirthDateFromISO(iso) {
   if (!iso) return;
-  populateBirthDropdowns(); // ต้องมีตัวเลือกก่อนเซ็ตค่า
-  const parts = iso.split('-');
-  if (parts.length < 3) return;
-  const ceYear = parseInt(parts[0]);
-  const mon  = parseInt(parts[1]);
-  const day  = parseInt(parts[2]);
-  const dayEl  = document.getElementById('hBirthDay');
-  const monEl  = document.getElementById('hBirthMonth');
-  const yearEl = document.getElementById('hBirthYear');
-  if (dayEl)  dayEl.value  = day;       // dropdown value = day (1-31)
-  if (monEl)  monEl.value  = mon;       // dropdown value = mon (1-12)
-  if (yearEl) yearEl.value = ceYear;    // dropdown value = ceYear
+  const dateEl = document.getElementById('hBirthDate');
+  if (dateEl) dateEl.value = iso.split('T')[0];
   calcAgeFromBirth();
 }
 
@@ -3822,16 +3769,12 @@ function openAddHealthModal() {
   if (acList) { acList.innerHTML = ''; acList.style.display = 'none'; }
   popFilteredByMoo = [];
   // *** สิ้นสุดส่วนใหม่ ***
-  document.getElementById('hBirthDay').value   = '';
-  document.getElementById('hBirthMonth').value = '';
-  document.getElementById('hBirthYear').value  = '';
+  const birthDateEl = document.getElementById('hBirthDate');
+  if (birthDateEl) birthDateEl.value = '';
   // ... (โค้ดที่เหลือเหมือนเดิม)
   fields.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('hPrefix').value  = '';
   document.getElementById('hGender').value  = '';
-  document.getElementById('hBirthDay').value    = '';
-  document.getElementById('hBirthMonth').value  = '';
-  document.getElementById('hBirthYear').value   = '';
   document.getElementById('hDisabilityType').value = '';
   const prevEl2      = document.getElementById('hPhotoPreview');
   const placeholder2 = document.getElementById('hPhotoPlaceholder');
@@ -4800,9 +4743,8 @@ function fillHealthFromPopulation(p) {
   // วันเกิด
   if (p.birthDate) setBirthDateFromISO(p.birthDate);
   else {
-    document.getElementById('hBirthDay').value   = '';
-    document.getElementById('hBirthMonth').value = '';
-    document.getElementById('hBirthYear').value  = '';
+    const bdEl = document.getElementById('hBirthDate');
+    if (bdEl) bdEl.value = '';
     document.getElementById('hAgeDisplay').innerHTML = '';
   }
   showToast(`✅ ดึงข้อมูล ${p.fullName || '-'} สำเร็จ`);
