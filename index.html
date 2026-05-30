@@ -1017,6 +1017,14 @@ function formatThaiDate(dateStr) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
 }
 
+function formatThaiDateFull(dateStr) {
+  if (!dateStr) return '-';
+  const monthsFull = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  return `${d.getDate()} ${monthsFull[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
 function personIconSVG(size) {
   return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:var(--green-pale);border:3px solid var(--green-light);display:flex;align-items:center;justify-content:center;">
     <svg width="${size*.55}px" height="${size*.55}px" viewBox="0 0 44 44" fill="none">
@@ -3602,7 +3610,11 @@ function renderHealth() {
   const rows = myMembers.map(h => {
     const diseases = Array.isArray(h.diseases) ? h.diseases.join(', ') : h.diseases || '-';
     const ph = h.photo ? `<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);">` : personIconSVG(44);
-    const ageTxt = h.age !== null && h.age !== undefined ? `${h.age} ปี` : '-';
+    const fa = h.birthDate ? calcFullAge(h.birthDate) : null;
+    const birthdayTxt = h.birthDate ? formatThaiDateFull(h.birthDate) : '-';
+    const ageYearTxt = fa ? `${fa.years}` : (h.age !== null && h.age !== undefined ? `${h.age}` : '-');
+    const ageMonthTxt = fa ? `${fa.months}` : '-';
+    const ageDayTxt = fa ? `${fa.days}` : '-';
     const bp1 = h.bp1 || (h.bp ? h.bp : '');
     const bpHtml = bp1 ? `<span class="bp-badge">${bp1}</span>${h.bp2?` <span class="bp-badge">${h.bp2}</span>`:''} ${h.bp3?`<span class="bp-badge">${h.bp3}</span>`:''}` : '<span style="color:var(--gray-mid)">-</span>';
     const bmiVal = parseFloat(h.bmi)||0;
@@ -3615,7 +3627,10 @@ function renderHealth() {
       <td style="padding:8px;">${h.firstName} ${h.lastName}</td>
       <td style="padding:8px;">${h.address||'-'}</td>
       <td style="padding:8px;">${h.gender||'-'}</td>
-      <td style="padding:8px;">${ageTxt}</td>
+      <td style="padding:8px;white-space:nowrap;font-size:12px;">${birthdayTxt}</td>
+      <td style="padding:8px;text-align:center;">${ageYearTxt}</td>
+      <td style="padding:8px;text-align:center;">${ageMonthTxt}</td>
+      <td style="padding:8px;text-align:center;">${ageDayTxt}</td>
       <td style="padding:8px;">${h.phone||'-'}</td>
       <td style="padding:8px;max-width:160px;"><span style="font-size:12px;">${diseases}</span></td>
       <td style="padding:8px;">${h.height||'-'}</td>
@@ -3628,7 +3643,7 @@ function renderHealth() {
         <button class="btn-danger" style="margin-left:4px;" onclick="deleteHealthMember(${h.id})">ลบ</button>
       </td>
     </tr>`;
-  }).join('')||'<tr><td colspan="13" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีสมาชิก กดปุ่ม "เพิ่มสมาชิก" เพื่อเริ่มต้น</td></tr>';
+  }).join('')||'<tr><td colspan="16" class="text-center" style="color:var(--gray-mid);padding:20px;">ยังไม่มีสมาชิก กดปุ่ม "เพิ่มสมาชิก" เพื่อเริ่มต้น</td></tr>';
 
   return `
     <p class="section-title">👨‍👩‍👧 สมาชิกที่ดูแล</p>
@@ -3660,7 +3675,10 @@ function renderHealth() {
             <th style="padding:10px;text-align:left;font-size:13px;">ชื่อ-สกุล</th>
             <th style="padding:10px;font-size:13px;">บ้านเลขที่</th>
             <th style="padding:10px;font-size:13px;">เพศ</th>
-            <th style="padding:10px;font-size:13px;">อายุ</th>
+            <th style="padding:10px;font-size:13px;">วันเดือนปีเกิด (พ.ศ.)</th>
+            <th style="padding:10px;font-size:13px;">อายุปี</th>
+            <th style="padding:10px;font-size:13px;">อายุเดือน</th>
+            <th style="padding:10px;font-size:13px;">อายุวัน</th>
             <th style="padding:10px;font-size:13px;">เบอร์</th>
             <th style="padding:10px;font-size:13px;">โรคประจำตัว</th>
             <th style="padding:10px;font-size:13px;">สูง</th>
@@ -4073,15 +4091,18 @@ function filterHealth() {
     const diseases = Array.isArray(h.diseases) ? h.diseases.join(', ') : h.diseases||'-';
     const ph = h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--green-light);">`:personIconSVG(44);
     const fa = h.birthDate ? calcFullAge(h.birthDate) : null;
-    const ageTxt = fa ? ageText(fa) : (h.age!==null&&h.age!==undefined ? `${h.age} ปี` : '-');
+    const birthdayTxt = h.birthDate ? formatThaiDateFull(h.birthDate) : '-';
+    const ageYearTxt = fa ? `${fa.years}` : (h.age!==null&&h.age!==undefined ? `${h.age}` : '-');
+    const ageMonthTxt = fa ? `${fa.months}` : '-';
+    const ageDayTxt = fa ? `${fa.days}` : '-';
     const bmiVal = parseFloat(h.bmi)||0;
     let bc='bmi-normal',bl='ปกติ';
     if(bmiVal<18.5){bc='bmi-under';bl='ผอม';}else if(bmiVal>=25&&bmiVal<30){bc='bmi-over';bl='น้ำหนักเกิน';}else if(bmiVal>=30){bc='bmi-obese';bl='อ้วน';}
     const bp1 = h.bp1||(h.bp?h.bp:'');
     const bpHtml = bp1?`<span class="bp-badge">${bp1}</span>`:'<span style="color:var(--gray-mid)">-</span>';
     const hIdFmt = formatIdCard(h.idCard||'');
-    return `<tr><td style="text-align:center;padding:8px;">${ph}</td><td style="padding:8px;">${h.firstName} ${h.lastName}</td><td style="padding:8px;">${h.address||'-'}</td><td style="padding:8px;">${h.gender||'-'}</td><td style="padding:8px;white-space:nowrap;">${ageTxt}</td><td style="padding:8px;">${h.phone||'-'}</td><td style="padding:8px;max-width:160px;font-size:12px;">${diseases}</td><td style="padding:8px;">${h.height||'-'}</td><td style="padding:8px;">${h.weight||'-'}</td><td style="padding:8px;"><span class="bmi-badge ${bc}">${h.bmi||'-'}<small>${bl}</small></span></td><td style="padding:8px;">${bpHtml}</td><td style="padding:8px;">${h.bloodSugar||'-'}</td><td style="padding:8px;white-space:nowrap;"><button class="btn-edit" onclick="editHealthMember(${h.id})">แก้ไข</button> <button class="btn-danger" onclick="deleteHealthMember(${h.id})">ลบ</button></td></tr>`;
-  }).join('')||'<tr><td colspan="13" class="text-center" style="color:var(--gray-mid);padding:20px;">ไม่พบข้อมูล</td></tr>';
+    return `<tr><td style="text-align:center;padding:8px;">${ph}</td><td style="padding:8px;">${h.firstName} ${h.lastName}</td><td style="padding:8px;">${h.address||'-'}</td><td style="padding:8px;">${h.gender||'-'}</td><td style="padding:8px;white-space:nowrap;font-size:12px;">${birthdayTxt}</td><td style="padding:8px;text-align:center;">${ageYearTxt}</td><td style="padding:8px;text-align:center;">${ageMonthTxt}</td><td style="padding:8px;text-align:center;">${ageDayTxt}</td><td style="padding:8px;">${h.phone||'-'}</td><td style="padding:8px;max-width:160px;font-size:12px;">${diseases}</td><td style="padding:8px;">${h.height||'-'}</td><td style="padding:8px;">${h.weight||'-'}</td><td style="padding:8px;"><span class="bmi-badge ${bc}">${h.bmi||'-'}<small>${bl}</small></span></td><td style="padding:8px;">${bpHtml}</td><td style="padding:8px;">${h.bloodSugar||'-'}</td><td style="padding:8px;white-space:nowrap;"><button class="btn-edit" onclick="editHealthMember(${h.id})">แก้ไข</button> <button class="btn-danger" onclick="deleteHealthMember(${h.id})">ลบ</button></td></tr>`;
+  }).join('')||'<tr><td colspan="16" class="text-center" style="color:var(--gray-mid);padding:20px;">ไม่พบข้อมูล</td></tr>';
 }
 
 // ============================================================
